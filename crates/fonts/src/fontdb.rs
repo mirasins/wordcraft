@@ -780,7 +780,20 @@ pub fn system_font_dirs() -> Vec<std::path::PathBuf> {
         let root = std::env::var_os("WINDIR").map(std::path::PathBuf::from).unwrap_or_else(|| "C:\\Windows".into());
         dirs.push(root.join("Fonts"));
         if let Some(l) = std::env::var_os("LOCALAPPDATA") {
-            dirs.push(std::path::PathBuf::from(l).join("Microsoft\\Windows\\Fonts"));
+            let local = std::path::PathBuf::from(l);
+            dirs.push(local.join("Microsoft\\Windows\\Fonts"));
+            // Office's cloud fonts (Aptos, Word's default since 2024, among them): downloaded
+            // into FontCache\<version>\CloudFonts\<family>\, outside the Fonts folders, so a
+            // document in them would otherwise get a substitute with other metrics and wrap and
+            // paginate differently from Word.
+            if let Ok(entries) = std::fs::read_dir(local.join("Microsoft\\FontCache")) {
+                for e in entries.flatten() {
+                    let cloud = e.path().join("CloudFonts");
+                    if cloud.is_dir() {
+                        dirs.push(cloud);
+                    }
+                }
+            }
         }
     } else {
         dirs.extend(["/usr/share/fonts", "/usr/local/share/fonts"].map(Into::into));
@@ -1949,6 +1962,18 @@ mod tests {
         let dirs = system_font_dirs();
         for d in ["/usr/share/fonts", "/run/host/fonts", "/run/host/local-fonts", "/run/host/user-fonts", "/run/host/user-fonts-legacy"] {
             assert!(dirs.contains(&std::path::PathBuf::from(d)), "{d} missing from {dirs:?}");
+        }
+    }
+
+    #[test]
+    #[cfg(windows)]
+    fn system_font_dirs_include_office_cloud_fonts() {
+        // Office downloads Aptos and its other cloud fonts outside the Fonts folders.
+        let Some(l) = std::env::var_os("LOCALAPPDATA") else { return };
+        let Ok(entries) = std::fs::read_dir(std::path::PathBuf::from(l).join("Microsoft\\FontCache")) else { return };
+        let dirs = system_font_dirs();
+        for cloud in entries.flatten().map(|e| e.path().join("CloudFonts")).filter(|p| p.is_dir()) {
+            assert!(dirs.contains(&cloud), "{cloud:?} missing from {dirs:?}");
         }
     }
 
