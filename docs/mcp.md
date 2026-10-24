@@ -113,6 +113,9 @@ files it was given rather than guarding against other software on the computer.
 | `get_text` / `inspect_document` | read the document back (verify without screenshots) |
 | `render_page` | a page as PNG |
 | `parity` | feature coverage |
+| `assistant_context` | the writing assistant's context (local only, nothing sent) |
+| `assistant_suggest` | ask the writing assistant for rewrites (sends text to Claude Code) |
+| `assistant_apply` | apply suggestions from a context as one undoable edit |
 | `screenshot`, `click`, `key`, `ui_inspect` | app only (`--connect`) |
 
 `insert.picture` and `insert.icon` leave the caret after the new picture, so typing next doesn't
@@ -121,6 +124,23 @@ replace it; Picture Format commands (`picture.*`, `arrange.*`) still act on it.
 Resources: `wordcraft://document` (inspect) and `wordcraft://commands`.
 
 The acceptance test `crates/mcp/src/tests.rs` writes a formatted document using MCP only.
+
+## Writing assistant
+
+`assistant_context` returns what the assistant would work on (document id, revision, scope and
+target paragraphs with their text). It is local only. `assistant_suggest` sends the instruction and
+the target text to your Claude Code account and does not change the document. It needs
+`confirm_document: true` where the scope covers the whole body, and `include_document_context`
+needs it too. `assistant_apply` takes the `context` and `changes` `[{index, text}]` and applies
+them as one undoable edit; a stale context is refused.
+
+Headless (`wordcraft-cli mcp`): `assistant_suggest` runs the local `claude` synchronously and
+returns `{context, suggestions, explanation}`. Remote (`--connect`): the app starts the request and
+replies `{started, poll: "assistant.status"}`; poll `assistant.status` with `execute`, then apply
+with `assistant.accept {id, index?}`. Both need Claude Code installed and signed in; WordCraft
+never signs in for you. `model` (optional) picks a Claude model by alias or id (`sonnet`, `opus`…);
+without it Claude Code's default is used. Validated against a live account; see
+[writing-assistant.md](writing-assistant.md).
 
 ## Character and paragraph properties
 

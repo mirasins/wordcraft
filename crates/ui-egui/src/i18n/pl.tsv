@@ -2795,3 +2795,46 @@ preview	Title	Tytuł
 	This document has no bookmarks.	This document has no bookmarks.
 	Type a page number, or +2 / -1.	Type a page number, or +2 / -1.
 	Wait for the print job to finish submitting before closing.	Wait for the print job to finish submitting before closing.
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Oczekiwanie na Claude…
+	Cancelling…	Anulowanie…
+	Request cancelled. Text already sent cannot be retracted.	Anulowano żądanie. Wysłanego tekstu nie można cofnąć.
+	Writing Assistant	Asystent pisania
+	Writing\nAssistant	Asystent\npisania
+	Check connection	Sprawdź połączenie
+	Connected with Claude account	Połączono z kontem Claude
+	Disconnected / authentication required	Rozłączono / wymagane uwierzytelnienie
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Korzysta z oficjalnego Claude Code z Twoim kontem/OAuth. Bez kluczy API i dostawców zastępczych.
+	Sign in or change account	Zaloguj się lub zmień konto
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Zainstaluj Claude Code, a następnie uruchom `claude auth login` w terminalu. Aby zmienić konto, użyj oficjalnego procesu wylogowania/logowania i ponownie sprawdź połączenie.
+	Official authentication instructions	Oficjalne instrukcje uwierzytelniania
+	Scope	Zakres
+	Automatic: selected text, or the current paragraph when nothing is selected.	Automatycznie: zaznaczony tekst lub bieżący akapit, gdy nic nie jest zaznaczone.
+	Include the whole document as context	Dołącz cały dokument jako kontekst
+	I approve sending the whole document for this request	Zatwierdzam wysłanie całego dokumentu w tym żądaniu
+	What would you like to do with this text?	Co chcesz zrobić z tym tekstem?
+	Improve writing	Ulepsz tekst
+	Make concise	Skróć
+	More formal	Bardziej formalnie
+	More informal	Bardziej swobodnie
+	Correct spelling and grammar	Popraw pisownię i gramatykę
+	Summarize	Podsumuj
+	Tone	Ton
+	Rewrite tone	Przepisz ton
+	Generate	Generuj
+	Explain / suggest improvements	Wyjaśnij / zaproponuj ulepszenia
+	Claude is processing…	Claude przetwarza…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Wysyłany jest wyłącznie wyraźnie żądany tekst. Przejrzyj przed zastosowaniem. Historia pozostaje w pamięci tego okna i zostaje wyczyszczona po zamknięciu.
+	Proposal	Propozycja
+	The document changed. Regenerate before applying this proposal.	Dokument został zmieniony. Wygeneruj ponownie przed zastosowaniem tej propozycji.
+	Applied	Zastosowano
+	Apply all	Zastosuj wszystko
+	Discard	Odrzuć
+	Regenerate	Generuj ponownie
+	Undo last application	Cofnij ostatnie zastosowanie
+	Original	Oryginał
+	Section	Sekcja
+	Request	Żądanie
+	Writing Assistant Context	Kontekst asystenta pisania
+	Apply Writing Assistant Changes	Zastosuj zmiany asystenta pisania
+	Claude Code default	Domyślny Claude Code

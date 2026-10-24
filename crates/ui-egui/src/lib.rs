@@ -22,6 +22,7 @@ macro_rules! tl {
 
 pub mod a11y;
 pub mod a11y_pane;
+pub mod assistant;
 pub mod async_saves;
 pub mod autoscroll;
 pub mod backstage;
@@ -526,6 +527,8 @@ pub struct WordApp {
     pub ui: UiState,
     pub services: Services,
     pub printing: printing::State,
+    /// Writing suggestions are local, ephemeral state, never serialized into a document or preferences.
+    pub assistant: assistant::State,
     print_feedback_seen: Option<printing::Feedback>,
     pub canvas: canvas::CanvasState,
     /// Content control frames, check boxes and lists on the page.
@@ -691,6 +694,7 @@ impl WordApp {
             ui: UiState::default(),
             services,
             printing: Default::default(),
+            assistant: Default::default(),
             print_feedback_seen: None,
             canvas: canvas::CanvasState::default(),
             controls: Default::default(),
@@ -984,6 +988,9 @@ impl WordApp {
             return Err(e);
         }
         if let Some(r) = self.ui_command(id, &params) {
+            return r;
+        }
+        if let Some(r) = assistant::command(self, id, &params) {
             return r;
         }
         if id == "file.close" {
@@ -2102,6 +2109,7 @@ impl WordApp {
         }
         options::sync(self);
         self.settle_async_saves();
+        assistant::poll(self);
         // SmartArt Text Pane (#2701): Tab demotes and Shift+Tab promote the focused item, as Word's
         // pane does. Consuming the key stops Tab from moving the caret to the next row, and so does
         // resetting the focus direction: the item keeps focus after its level changes.
@@ -2366,7 +2374,11 @@ impl WordApp {
             return;
         }
         let t = theme::Tokens::get(&ctx);
-        self.escape_free = self.dialog.is_none() && !self.ui.backstage && self.ui.keytips == keytips::Phase::Off && !egui::Popup::is_any_open(&ctx);
+        self.escape_free = self.dialog.is_none()
+            && !self.assistant.open
+            && !self.ui.backstage
+            && self.ui.keytips == keytips::Phase::Off
+            && !egui::Popup::is_any_open(&ctx);
         // Keytips are read before layout so the frame paints the new state; badges paint after
         // the ribbon so they sit on top of it.
         crate::keytips::logic(self, &ctx);
@@ -2405,6 +2417,7 @@ impl WordApp {
         }
         content_controls::popup(self, &ctx);
         dialogs::show(self, &ctx);
+        assistant::show(self, &ctx);
         #[cfg(not(target_arch = "wasm32"))]
         file_browser::show(self, &ctx);
         colors::show(self, &ctx);
@@ -2469,7 +2482,7 @@ impl WordApp {
     /// (font size, zoom, command search) keeps the focus it took, and clicks on a dialog, menu or
     /// popup, or while one is open, leave focus alone. Clicks on the page are the canvas's own.
     fn refocus_after_chrome_click(&mut self, ctx: &egui::Context) {
-        if self.ui.backstage || self.dialog.is_some() || self.colors.is_some() {
+        if self.ui.backstage || self.dialog.is_some() || self.colors.is_some() || self.assistant.open {
             return;
         }
         #[cfg(not(target_arch = "wasm32"))]
@@ -2881,6 +2894,15 @@ fn control_click_as_secondary(events: &mut [egui::Event], held: &mut bool) {
 
 #[cfg(test)]
 mod tests_perf;
+
+/// Held by every test that renders through wgpu (`Harness::render`). On Windows without a usable
+/// GPU, wgpu falls back to the WARP software rasterizer, and two WARP devices drawing at once on
+/// parallel test threads crash the test process inside `d3d10warp.dll` (access violation).
+#[cfg(test)]
+pub(crate) fn gpu_test_lock() -> std::sync::MutexGuard<'static, ()> {
+    static GPU: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    GPU.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+}
 
 #[cfg(test)]
 mod tests {

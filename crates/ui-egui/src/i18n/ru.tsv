@@ -2773,3 +2773,46 @@ preview	Title	Пример
 	More tabs	Другие вкладки
 # #3013: Insert Table of Figures
 	Include label and number	Включить подпись и номер
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Ожидание Claude…
+	Cancelling…	Отмена…
+	Request cancelled. Text already sent cannot be retracted.	Запрос отменён. Уже отправленный текст нельзя отозвать.
+	Writing Assistant	Помощник по написанию
+	Writing\nAssistant	Помощник\nпо написанию
+	Check connection	Проверить подключение
+	Connected with Claude account	Подключено к учётной записи Claude
+	Disconnected / authentication required	Отключено / требуется аутентификация
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Использует официальный Claude Code с вашей учётной записью/OAuth. Без ключей API и резервных провайдеров.
+	Sign in or change account	Войти или сменить учётную запись
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Установите Claude Code, затем выполните `claude auth login` в терминале. Чтобы сменить учётную запись, используйте официальный процесс выхода и входа и снова проверьте подключение.
+	Official authentication instructions	Официальная инструкция по аутентификации
+	Scope	Область
+	Automatic: selected text, or the current paragraph when nothing is selected.	Автоматически: выделенный текст или текущий абзац, если ничего не выделено.
+	Include the whole document as context	Включить весь документ в контекст
+	I approve sending the whole document for this request	Я разрешаю отправку всего документа для этого запроса
+	What would you like to do with this text?	Что вы хотите сделать с этим текстом?
+	Improve writing	Улучшить текст
+	Make concise	Сделать короче
+	More formal	Более официально
+	More informal	Менее официально
+	Correct spelling and grammar	Исправить орфографию и грамматику
+	Summarize	Кратко изложить
+	Tone	Тон
+	Rewrite tone	Переписать в другом тоне
+	Generate	Создать
+	Explain / suggest improvements	Объяснить / предложить улучшения
+	Claude is processing…	Claude обрабатывает…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Отправляется только явно запрошенный текст. Проверьте перед применением. История хранится в памяти этого окна и очищается при выходе.
+	Proposal	Предложение
+	The document changed. Regenerate before applying this proposal.	Документ изменён. Создайте предложение заново перед применением.
+	Applied	Применено
+	Apply all	Применить все
+	Discard	Отменить
+	Regenerate	Создать заново
+	Undo last application	Отменить последнее применение
+	Original	Оригинал
+	Section	Раздел
+	Request	Запрос
+	Writing Assistant Context	Контекст помощника по написанию
+	Apply Writing Assistant Changes	Применить изменения помощника по написанию
+	Claude Code default	По умолчанию для Claude Code

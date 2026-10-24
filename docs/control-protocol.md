@@ -96,6 +96,37 @@ guarded the same way, and only a boolean `true` counts as `force`. A document wi
 changes closes at once (#1268). Closing closes the document, not the app: the window stays and
 shows no page, and `file.new` or `file.open` goes on from there (#1712).
 
+### Writing assistant
+
+The desktop app's writing assistant (see [writing-assistant.md](writing-assistant.md)) is driven
+by these methods. Suggestions are asynchronous: `assistant.auth` and `assistant.suggest` reply
+`{"started": true, "poll": "assistant.status"}`, and you poll `assistant.status` until `busy` is
+false. Nothing is sent before a request is started, and opening the window sends nothing.
+
+| Method | Params | Result |
+|---|---|---|
+| `ui.assistant` | `value?` (bool; omitted toggles) | `{"open": bool}` |
+| `assistant.auth` | — | starts a sign-in check (no document sent) |
+| `assistant.suggest` | `instruction`, `scope?` (`auto`, `selection`, `paragraph`, `section`, `document`), `confirm_document?`, `include_document_context?`, `explain_only?`, `model?` (Claude alias or id; omitted: Claude Code's default) | starts a request |
+| `assistant.status` | — | `{busy, connection, message, proposals: [{id, suggestions, explanation, applied, discarded}]}` |
+| `assistant.accept` | `id`, `index?` | applies one suggestion, or all pending ones when `index` is omitted |
+| `assistant.discard` | `id` | discards a proposal |
+| `assistant.cancel` | — | cancels the running local process; text already sent cannot be retracted |
+
+`confirm_document: true` is required whenever the scope covers every body paragraph in full, and
+for `include_document_context`. Without it the request is refused.
+
+```json
+{"id": 1, "key": "<window key>", "method": "assistant.suggest",
+ "params": {"instruction": "Make this more concise", "scope": "paragraph"}}
+{"id": 2, "key": "<window key>", "method": "assistant.status"}
+{"id": 3, "key": "<window key>", "method": "assistant.accept", "params": {"id": 1, "index": 0}}
+```
+
+The example keys are placeholders. Engine commands `assistant.context` and `assistant.apply`
+are available through `engine.execute`; see the developer notes in
+[writing-assistant-development.md](writing-assistant-development.md).
+
 ### Native printing
 
 `engine.execute` can call `ui.printSettings` with `{}` to inspect the printer list, selected

@@ -1,6 +1,6 @@
 # WordCraft architecture
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** minor (`proof` is per language: English and Polish; previously major: first committed version; `plan/architecture.md` is local-only) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-23 · **Change:** minor (writing assistant, `assistant` at L4; previously minor: `proof` is per language: English and Polish; previously major: first committed version; `plan/architecture.md` is local-only) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
 
 How WordCraft is built today (origin/main `40c5d51`). The longer design notes in
 `plan/architecture.md` are gitignored and local to the original author's machine; this file is the
@@ -27,6 +27,7 @@ winit or rfd.
 | L4 | `engine` | 15.2k | `Session` (document, selection, undo, layout cache, view state), **command registry** (422 `CommandSpec`s in `cmd/*.rs`), Word feature catalog (`catalog.rs`), samples, file I/O dispatch (`io.rs`), Read Aloud sentence model |
 | L4 | `zotero` | 1.7k | Zotero's word-processor integration protocol answered against a `Session` |
 | L4 | `control-key` | 0.1k | Per-window control-port key files shared by the app and the MCP bridge |
+| L4 | `assistant` | 0.5k | Writing assistant: runs only the official `claude` CLI with the user's account (no API keys, no HTTP, no shell); bounded, cancellable process; validated structured output; `Provider` trait, optional `--model`. See [writing-assistant-development.md](writing-assistant-development.md) |
 | L5 | `mcp` | 1.0k | MCP server: every command as a tool; headless or bridged to the running app |
 | L6 | `ui-egui` | 13.1k | Word-style front end: ribbon, keytips, mini-toolbar, Backstage, canvas, rulers, panes, dialogs, Equation tab, i18n catalogs, themes, control channel, headless `ui_shot` example |
 | apps | `wordcraft` | 1.6k | Desktop app (eframe + wgpu; logging, window geometry, file associations) |
@@ -64,5 +65,6 @@ winit or rfd.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-23 | minor | Writing assistant draft: `assistant` crate (L4), engine `assistant.context`/`assistant.apply`, UI window and `assistant.*` commands, MCP tools. Not yet compiled in the gates or run against a live account |
 | 2026-10-10 | minor | `proof`: proofing languages (English, Polish), affix engine, Polish patterns; layout and engine route each run by its language |
 | 2026-10-10 | major | First committed architecture doc, from the crates' sources and `AGENTS.md` |

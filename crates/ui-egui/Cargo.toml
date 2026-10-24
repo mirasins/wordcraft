@@ -17,6 +17,7 @@ wordcraft-fonts = { workspace = true }
 wordcraft-layout = { workspace = true }
 wordcraft-render = { workspace = true }
 wordcraft-engine = { workspace = true }
+wordcraft-assistant = { workspace = true }
 wordcraft-zotero = { workspace = true }
 egui = { workspace = true }
 serde = { workspace = true }

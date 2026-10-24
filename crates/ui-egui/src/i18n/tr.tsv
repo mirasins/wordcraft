@@ -2772,3 +2772,46 @@ preview	Title	Örnek
 	More tabs	Diğer sekmeler
 # #3013: Insert Table of Figures
 	Include label and number	Etiketi ve numarayı ekle
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Claude için bekleniyor…
+	Cancelling…	İptal ediliyor…
+	Request cancelled. Text already sent cannot be retracted.	İstek iptal edildi. Gönderilmiş metin geri alınamaz.
+	Writing Assistant	Yazma Asistanı
+	Writing\nAssistant	Yazma\nAsistanı
+	Check connection	Bağlantıyı denetle
+	Connected with Claude account	Claude hesabıyla bağlandı
+	Disconnected / authentication required	Bağlantı kesildi / kimlik doğrulama gerekli
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Hesabınız/OAuth ile resmi Claude Code kullanır. API anahtarı veya yedek sağlayıcı yok.
+	Sign in or change account	Oturum aç veya hesabı değiştir
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Claude Code'u yükleyin, ardından terminalinizde `claude auth login` komutunu çalıştırın. Hesabı değiştirmek için resmi çıkış/giriş akışını kullanın ve bağlantıyı yeniden denetleyin.
+	Official authentication instructions	Resmi kimlik doğrulama talimatları
+	Scope	Kapsam
+	Automatic: selected text, or the current paragraph when nothing is selected.	Otomatik: seçili metin veya hiçbir şey seçili değilse geçerli paragraf.
+	Include the whole document as context	Tüm belgeyi bağlam olarak ekle
+	I approve sending the whole document for this request	Bu istek için tüm belgenin gönderilmesini onaylıyorum
+	What would you like to do with this text?	Bu metinle ne yapmak istersiniz?
+	Improve writing	Yazımı geliştir
+	Make concise	Kısalt
+	More formal	Daha resmi
+	More informal	Daha samimi
+	Correct spelling and grammar	Yazım ve dilbilgisini düzelt
+	Summarize	Özetle
+	Tone	Ton
+	Rewrite tone	Tonu yeniden yaz
+	Generate	Oluştur
+	Explain / suggest improvements	Açıkla / iyileştirme öner
+	Claude is processing…	Claude işleniyor…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Yalnızca açıkça istenen metin gönderilir. Uygulamadan önce gözden geçirin. Geçmiş bu pencerenin belleğinde tutulur ve çıkışta temizlenir.
+	Proposal	Öneri
+	The document changed. Regenerate before applying this proposal.	Belge değişti. Bu öneriyi uygulamadan önce yeniden oluşturun.
+	Applied	Uygulandı
+	Apply all	Tümünü uygula
+	Discard	Vazgeç
+	Regenerate	Yeniden oluştur
+	Undo last application	Son uygulamayı geri al
+	Original	Özgün
+	Section	Bölüm
+	Request	İstek
+	Writing Assistant Context	Yazma Asistanı Bağlamı
+	Apply Writing Assistant Changes	Yazma Asistanı Değişikliklerini Uygula
+	Claude Code default	Claude Code varsayılanı

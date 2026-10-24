@@ -2764,3 +2764,46 @@
 	More tabs	Още раздели
 # #3013: Insert Table of Figures
 	Include label and number	Включване на етикета и номера
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Изчакване на Claude…
+	Cancelling…	Отмяна…
+	Request cancelled. Text already sent cannot be retracted.	Заявката е отменена. Текстът, който вече е изпратен, не може да бъде върнат.
+	Writing Assistant	Помощник за писане
+	Writing\nAssistant	Помощник\nза писане
+	Check connection	Проверка на връзката
+	Connected with Claude account	Свързано с акаунт в Claude
+	Disconnected / authentication required	Прекъснато / необходима е удостоверяване
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Използва официалния Claude Code с вашия акаунт/OAuth. Без API ключове и резервни доставчици.
+	Sign in or change account	Вход или смяна на акаунт
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Инсталирайте Claude Code, след което изпълнете `claude auth login` в терминала. За смяна на акаунт използвайте официалния процес за изход/вход и проверете отново връзката.
+	Official authentication instructions	Официални инструкции за удостоверяване
+	Scope	Обхват
+	Automatic: selected text, or the current paragraph when nothing is selected.	Автоматично: избрания текст или текущият параграф, когато нищо не е избрано.
+	Include the whole document as context	Включване на целия документ като контекст
+	I approve sending the whole document for this request	Одобрявам изпращането на целия документ за тази заявка
+	What would you like to do with this text?	Какво искате да направите с този текст?
+	Improve writing	Подобряване на текста
+	Make concise	Съкращаване
+	More formal	По-официален
+	More informal	По-неофициален
+	Correct spelling and grammar	Корекция на правописа и граматиката
+	Summarize	Резюме
+	Tone	Тон
+	Rewrite tone	Пренаписване на тона
+	Generate	Генериране
+	Explain / suggest improvements	Обяснение / предложения за подобрения
+	Claude is processing…	Claude обработва…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Изпраща се само изрично поискан текст. Прегледайте преди прилагане. Историята остава в паметта на този прозорец и се изчиства при изход.
+	Proposal	Предложение
+	The document changed. Regenerate before applying this proposal.	Документът е променен. Генерирайте отново, преди да приложите това предложение.
+	Applied	Приложено
+	Apply all	Приложи всички
+	Discard	Отказ
+	Regenerate	Генериране отново
+	Undo last application	Отмяна на последното приложение
+	Original	Оригинал
+	Section	Раздел
+	Request	Заявка
+	Writing Assistant Context	Контекст на помощника за писане
+	Apply Writing Assistant Changes	Прилагане на промените от помощника за писане
+	Claude Code default	Стандартен за Claude Code

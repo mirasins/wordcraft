@@ -49,7 +49,11 @@ fn obj(props: Value, req: &[&str]) -> Value {
     json!({"type": "object", "properties": props, "required": req})
 }
 fn tool(name: &str, title: &str, desc: &str, schema: Value, ro: bool) -> Value {
-    json!({"name": name, "title": title, "description": desc, "inputSchema": schema, "annotations": {"title": title, "readOnlyHint": ro, "openWorldHint": false}})
+    tool_world(name, title, desc, schema, ro, false)
+}
+/// `open`: the tool sends data outside the app (a suggestion goes to the writing assistant's provider).
+fn tool_world(name: &str, title: &str, desc: &str, schema: Value, ro: bool, open: bool) -> Value {
+    json!({"name": name, "title": title, "description": desc, "inputSchema": schema, "annotations": {"title": title, "readOnlyHint": ro, "openWorldHint": open}})
 }
 
 pub fn tool_definitions() -> Value {
@@ -151,11 +155,57 @@ pub fn tool_definitions() -> Value {
             obj(json!({}), &[]),
             true
         ),
+        tool(
+            "assistant_context",
+            "Writing assistant context",
+            "What the writing assistant would work on: document id, revision, scope and target ranges with their original text. Local only; nothing is sent to a provider. The `document` scope needs confirm_document: true.",
+            obj(
+                json!({"scope": {"type": "string", "enum": ["auto", "selection", "paragraph", "section", "document"], "description": "Default auto"}, "confirm_document": {"type": "boolean", "description": "Required for the document scope"}}),
+                &[]
+            ),
+            true
+        ),
+        tool_world(
+            "assistant_suggest",
+            "Writing assistant suggest",
+            "Ask the writing assistant (your Claude Code account) for rewrites of the targets. Sends the instruction and the target text to the provider; with include_document_context (needs confirm_document: true) the whole document too. Does not change the document: apply with assistant_apply. explain_only returns an explanation with no suggestions.",
+            obj(
+                json!({
+                    "instruction": s("What to do with the text"),
+                    "scope": {"type": "string", "enum": ["auto", "selection", "paragraph", "section", "document"], "description": "Default auto"},
+                    "confirm_document": {"type": "boolean", "description": "Consent to the document scope"},
+                    "include_document_context": {"type": "boolean", "description": "Send the whole document as context (needs confirm_document)"},
+                    "explain_only": {"type": "boolean", "description": "Explain without suggesting rewrites"},
+                    "model": {"type": "string", "description": "Claude model alias or id (sonnet, opus, haiku, claude-opus-5-5…); omit for Claude Code's default"}
+                }),
+                &["instruction"]
+            ),
+            true,
+            true
+        ),
+        tool(
+            "assistant_apply",
+            "Writing assistant apply",
+            "Apply suggestions from assistant_suggest as one undoable edit. Pass the context from assistant_context or assistant_suggest and changes [{index, text}].",
+            obj(
+                json!({
+                    "context": {"type": "object", "description": "The context snapshot the suggestions were made for"},
+                    "changes": {"type": "array", "items": {"type": "object", "properties": {"index": {"type": "integer", "minimum": 0}, "text": {"type": "string"}}, "required": ["index", "text"]}}
+                }),
+                &["context", "changes"]
+            ),
+            false
+        ),
     ])
 }
 
 fn exec(b: &mut dyn Backend, id: &str, params: Value) -> Result<Value, String> {
     b.call("engine.execute", json!({"command": id, "params": params}))
+}
+
+/// The named keys of `a` that are present, as a new object: nothing else is forwarded.
+fn pick(a: &Value, keys: &[&str]) -> Value {
+    Value::Object(keys.iter().filter_map(|k| a.get(*k).map(|v| ((*k).to_string(), v.clone()))).collect())
 }
 
 fn wrap(r: Result<Value, String>) -> ToolResult {
@@ -271,6 +321,13 @@ pub fn call_tool(b: &mut dyn Backend, name: &str, a: &Value) -> ToolResult {
         "click" => wrap(b.call("ui.click", a.clone())),
         "key" => wrap(b.call("ui.key", a.clone())),
         "ui_inspect" => wrap(b.call("ui.inspect", json!({}))),
+        "assistant_context" => wrap(exec(b, "assistant.context", pick(a, &["scope", "confirm_document"]))),
+        "assistant_suggest" => wrap(exec(
+            b,
+            "assistant.suggest",
+            pick(a, &["instruction", "scope", "confirm_document", "include_document_context", "explain_only", "model"]),
+        )),
+        "assistant_apply" => wrap(exec(b, "assistant.apply", pick(a, &["context", "changes"]))),
         other => ToolResult::error(format!("unknown tool `{other}`")),
     }
 }
@@ -331,5 +388,53 @@ mod tests {
         let schema = &open["inputSchema"];
         assert!(schema["properties"]["password"].is_object(), "the schema offers no password");
         assert_eq!(schema["required"], json!(["path"]), "the password stays optional");
+    }
+
+    fn definition(name: &str) -> Value {
+        tool_definitions().as_array().expect("list").iter().find(|t| t["name"] == name).cloned().unwrap_or(Value::Null)
+    }
+
+    #[test]
+    fn assistant_tools_have_the_right_annotations() {
+        assert_eq!(definition("assistant_context")["annotations"]["openWorldHint"], json!(false));
+        assert_eq!(definition("assistant_context")["annotations"]["readOnlyHint"], json!(true));
+        let suggest = definition("assistant_suggest");
+        assert_eq!(suggest["annotations"]["openWorldHint"], json!(true), "suggestions go to the provider");
+        assert_eq!(suggest["annotations"]["readOnlyHint"], json!(true), "suggest does not change the document");
+        let apply = definition("assistant_apply");
+        assert_eq!(apply["annotations"]["readOnlyHint"], json!(false));
+        assert_eq!(apply["annotations"]["openWorldHint"], json!(false));
+    }
+
+    #[test]
+    fn assistant_suggest_schema_carries_the_consent_parameters() {
+        let schema = &definition("assistant_suggest")["inputSchema"];
+        assert_eq!(schema["required"], json!(["instruction"]));
+        for k in ["confirm_document", "include_document_context", "explain_only"] {
+            assert_eq!(schema["properties"][k]["type"], json!("boolean"), "{k}");
+        }
+        assert_eq!(schema["properties"]["scope"]["enum"], json!(["auto", "selection", "paragraph", "section", "document"]));
+        assert_eq!(definition("assistant_apply")["inputSchema"]["required"], json!(["context", "changes"]));
+    }
+
+    #[test]
+    fn assistant_tools_forward_only_their_known_keys() {
+        let mut b = Recording { seen: None };
+        let r = call_tool(&mut b, "assistant_suggest", &json!({"instruction": "Shorten", "explain_only": true, "scope": "paragraph", "junk": 1}));
+        assert!(!r.is_error, "{:?}", r);
+        let (method, call) = b.seen.take().expect("called");
+        assert_eq!(method, "engine.execute");
+        assert_eq!(call["command"], json!("assistant.suggest"));
+        assert_eq!(call["params"], json!({"instruction": "Shorten", "explain_only": true, "scope": "paragraph"}));
+    }
+
+    #[test]
+    fn assistant_apply_forwards_context_and_changes() {
+        let mut b = Recording { seen: None };
+        let args = json!({"context": {"document_id": "d", "revision": 3}, "changes": [{"index": 0, "text": "x"}], "x": 1});
+        call_tool(&mut b, "assistant_apply", &args);
+        let (_, call) = b.seen.take().expect("called");
+        assert_eq!(call["command"], json!("assistant.apply"));
+        assert_eq!(call["params"], json!({"context": {"document_id": "d", "revision": 3}, "changes": [{"index": 0, "text": "x"}]}));
     }
 }

@@ -5,6 +5,7 @@
 //! agents can also click, type and screenshot the real UI.
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+pub mod assistant;
 pub mod backend;
 pub mod server;
 pub mod tools;
@@ -35,14 +36,29 @@ impl Headless {
         self
     }
 
+    fn suggest(&mut self, params: &Value) -> Result<Value, String> {
+        let model = assistant::parse_suggest(params)?.model;
+        assistant::suggest(&mut self.session, params, |request| assistant::generate_locally(request, model.as_deref()))
+    }
+
     fn answer(&mut self, method: &str, params: Value) -> Result<Value, String> {
         match method {
             "engine.execute" | "command" => {
                 let id = params.get("command").and_then(Value::as_str).ok_or("missing `command`")?.to_string();
                 let p = params.get("params").cloned().filter(|v| !v.is_null()).unwrap_or(json!({}));
+                if id == "assistant.suggest" {
+                    return self.suggest(&p);
+                }
                 self.session.run(&id, &p).map_err(|e| e.to_string())
             }
-            "engine.commands" => Ok(self.session.registry.describe()),
+            "assistant.suggest" => self.suggest(&params),
+            "engine.commands" => {
+                let mut list = self.session.registry.describe();
+                if let Value::Array(items) = &mut list {
+                    items.push(assistant::command_metadata());
+                }
+                Ok(list)
+            }
             "document.inspect" => self.session.run("document.inspect", &params).map_err(|e| e.to_string()),
             "ui.parity" => Ok(wordcraft_engine::catalog::parity(&self.session.registry)),
             "ui.render" | "render.page" => {

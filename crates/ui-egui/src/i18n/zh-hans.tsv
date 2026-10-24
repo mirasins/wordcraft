@@ -2379,3 +2379,46 @@
 	More tabs	更多选项卡
 # #3013: Insert Table of Figures
 	Include label and number	包含标签和编号
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	等待 Claude…
+	Cancelling…	正在取消…
+	Request cancelled. Text already sent cannot be retracted.	请求已取消。已发送的文本无法撤回。
+	Writing Assistant	写作助手
+	Writing\nAssistant	写作\n助手
+	Check connection	检查连接
+	Connected with Claude account	已连接 Claude 账户
+	Disconnected / authentication required	已断开连接 / 需要身份验证
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	使用您账户/OAuth 的官方 Claude Code。不使用 API 密钥或备用提供商。
+	Sign in or change account	登录或更换账户
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	安装 Claude Code，然后在终端中运行 `claude auth login`。如需更换账户，请使用其官方注销/登录流程，然后重新检查连接。
+	Official authentication instructions	官方身份验证说明
+	Scope	范围
+	Automatic: selected text, or the current paragraph when nothing is selected.	自动：所选文本；未选择任何内容时为当前段落。
+	Include the whole document as context	将整个文档作为上下文包含
+	I approve sending the whole document for this request	我同意为此请求发送整个文档
+	What would you like to do with this text?	您想对此文本做什么？
+	Improve writing	改进写作
+	Make concise	精简
+	More formal	更正式
+	More informal	更口语化
+	Correct spelling and grammar	更正拼写和语法
+	Summarize	总结
+	Tone	语气
+	Rewrite tone	改写语气
+	Generate	生成
+	Explain / suggest improvements	解释 / 建议改进
+	Claude is processing…	Claude 正在处理…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	仅发送明确请求的文本。应用前请先检查。历史记录保存在此窗口的内存中，退出时清除。
+	Proposal	建议
+	The document changed. Regenerate before applying this proposal.	文档已更改。应用此建议前请重新生成。
+	Applied	已应用
+	Apply all	全部应用
+	Discard	放弃
+	Regenerate	重新生成
+	Undo last application	撤销上次应用
+	Original	原文
+	Section	节
+	Request	请求
+	Writing Assistant Context	写作助手上下文
+	Apply Writing Assistant Changes	应用写作助手更改
+	Claude Code default	Claude Code 默认

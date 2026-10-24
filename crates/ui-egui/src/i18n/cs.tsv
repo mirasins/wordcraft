@@ -2766,3 +2766,46 @@ preview	Title	Ukázka
 	More tabs	Další karty
 # #3013: Insert Table of Figures
 	Include label and number	Zahrnout popisek a číslo
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Čekání na Claude…
+	Cancelling…	Rušení…
+	Request cancelled. Text already sent cannot be retracted.	Požadavek byl zrušen. Text, který již byl odeslán, nelze vzít zpět.
+	Writing Assistant	Asistent psaní
+	Writing\nAssistant	Asistent\npsaní
+	Check connection	Zkontrolovat připojení
+	Connected with Claude account	Připojeno k účtu Claude
+	Disconnected / authentication required	Odpojeno / vyžadováno ověření
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Používá oficiální Claude Code s vaším účtem/OAuth. Žádné API klíče ani náhradní poskytovatelé.
+	Sign in or change account	Přihlásit se nebo změnit účet
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Nainstalujte Claude Code a poté v terminálu spusťte `claude auth login`. Chcete-li změnit účet, použijte jeho oficiální postup odhlášení/přihlášení a znovu zkontrolujte připojení.
+	Official authentication instructions	Oficiální pokyny k ověření
+	Scope	Rozsah
+	Automatic: selected text, or the current paragraph when nothing is selected.	Automaticky: vybraný text, nebo aktuální odstavec, pokud není nic vybráno.
+	Include the whole document as context	Zahrnout celý dokument jako kontext
+	I approve sending the whole document for this request	Souhlasím s odesláním celého dokumentu pro tento požadavek
+	What would you like to do with this text?	Co chcete s tímto textem udělat?
+	Improve writing	Vylepšit psaní
+	Make concise	Zkrátit
+	More formal	Formálnější
+	More informal	Neformálnější
+	Correct spelling and grammar	Opravit pravopis a gramatiku
+	Summarize	Shrnout
+	Tone	Tón
+	Rewrite tone	Přepsat tón
+	Generate	Generovat
+	Explain / suggest improvements	Vysvětlit / navrhnout vylepšení
+	Claude is processing…	Claude zpracovává…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Odesílá se pouze explicitně vyžádaný text. Před použitím zkontrolujte. Historie zůstává v paměti tohoto okna a při ukončení se vymaže.
+	Proposal	Návrh
+	The document changed. Regenerate before applying this proposal.	Dokument byl změněn. Před použitím tohoto návrhu jej znovu vygenerujte.
+	Applied	Použito
+	Apply all	Použít vše
+	Discard	Zahodit
+	Regenerate	Znovu generovat
+	Undo last application	Vrátit poslední použití
+	Original	Původní
+	Section	Oddíl
+	Request	Požadavek
+	Writing Assistant Context	Kontext asistenta psaní
+	Apply Writing Assistant Changes	Použít změny asistenta psaní
+	Claude Code default	Výchozí pro Claude Code

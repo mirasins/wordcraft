@@ -2802,3 +2802,46 @@ template	Letter	Brev
 	More tabs	Fler flikar
 # #3013: Insert Table of Figures
 	Include label and number	Ta med etikett och nummer
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Väntar på Claude…
+	Cancelling…	Avbryter…
+	Request cancelled. Text already sent cannot be retracted.	Begäran avbröts. Text som redan har skickats kan inte dras tillbaka.
+	Writing Assistant	Skrivassistent
+	Writing\nAssistant	Skriv\nassistent
+	Check connection	Kontrollera anslutningen
+	Connected with Claude account	Ansluten med Claude-konto
+	Disconnected / authentication required	Frånkopplad / autentisering krävs
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Använder officiell Claude Code med ditt konto/OAuth. Inga API-nycklar eller reservleverantörer.
+	Sign in or change account	Logga in eller byt konto
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Installera Claude Code och kör `claude auth login` i terminalen. Byt konto med dess officiella utloggnings- och inloggningsflöde och kontrollera sedan anslutningen igen.
+	Official authentication instructions	Officiella autentiseringsinstruktioner
+	Scope	Omfattning
+	Automatic: selected text, or the current paragraph when nothing is selected.	Automatiskt: markerad text, eller aktuellt stycke när inget är markerat.
+	Include the whole document as context	Inkludera hela dokumentet som kontext
+	I approve sending the whole document for this request	Jag godkänner att hela dokumentet skickas för den här begäran
+	What would you like to do with this text?	Vad vill du göra med den här texten?
+	Improve writing	Förbättra skrivandet
+	Make concise	Gör kortare
+	More formal	Mer formell
+	More informal	Mer informell
+	Correct spelling and grammar	Rätta stavning och grammatik
+	Summarize	Sammanfatta
+	Tone	Ton
+	Rewrite tone	Skriv om tonen
+	Generate	Generera
+	Explain / suggest improvements	Förklara / föreslå förbättringar
+	Claude is processing…	Claude bearbetar…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Endast uttryckligen begärd text skickas. Granska innan du tillämpar. Historiken finns kvar i fönstrets minne och rensas vid avslut.
+	Proposal	Förslag
+	The document changed. Regenerate before applying this proposal.	Dokumentet har ändrats. Generera om innan du tillämpar detta förslag.
+	Applied	Tillämpad
+	Apply all	Tillämpa alla
+	Discard	Kassera
+	Regenerate	Generera om
+	Undo last application	Ångra senaste tillämpningen
+	Original	Original
+	Section	Avsnitt
+	Request	Begäran
+	Writing Assistant Context	Skrivassistentens kontext
+	Apply Writing Assistant Changes	Tillämpa ändringar från skrivassistenten
+	Claude Code default	Claude Code-standard

@@ -62,6 +62,18 @@ Typing, Enter, Backspace, Tab, lists, AutoCorrect and AutoFormat follow Word's o
 - Shell gotcha: `mv`/`cp` may be aliased interactive — use `/bin/mv -f` / `/bin/cp -f`.
 - Parallel agents: separate `CARGO_TARGET_DIR` per agent; edit only the crates you own; delete your target dir when done (disk).
 
+## OpenCode: delegación a subagentes
+- Delega en subagentes del proveedor `github-copilot` las tareas acotadas: búsquedas, revisiones, cambios pequeños y ejecución de pruebas.
+- Usa modelos ligeros y de menor coste. Antes de elegir, consulta los modelos disponibles con `opencode.models`; no fijes identificadores ni versiones en el código o la documentación.
+- Elige siempre el modelo más pequeño que sea adecuado. No escales a un modelo premium ni a otro proveedor sin autorización explícita del usuario.
+- El agente principal coordina, toma las decisiones complejas y hace la revisión final del trabajo delegado.
+- Si GitHub Copilot no está disponible, informa al usuario antes de sustituirlo por otro proveedor.
+
+## Asistente de escritura: autenticación
+- El asistente de escritura usa exclusivamente el binario oficial de Claude Code con la sesión o el mecanismo OAuth oficialmente soportado del usuario; WordCraft no extrae ni copia sus tokens.
+- No implementes fallback a API key, otros proveedores ni servidores propios. Si Claude Code no está disponible o su autenticación no es válida, muestra el error y ofrece instrucciones para instalarlo o iniciar sesión mediante su flujo oficial.
+- No cambies silenciosamente a credenciales API presentes en el entorno: verifica el método efectivo antes de enviar texto y rechaza los métodos no permitidos.
+
 ## Roadmap
 Progress docs follow [`craftrules/standards/progress-docs.md`](https://github.com/storytold/craftrules/blob/main/standards/progress-docs.md): `ROADMAP.md` (stage, headline numbers, progress log), `docs/target-app-parity.md` (the assessment), `docs/gaps.md` (ranked work list), `docs/roadmap.md` (milestones, Current focus), `docs/architecture.md`, and the parity checklists `docs/file-format-parity.md`, `docs/layout-parity.md`, `docs/typing-parity.md`, `docs/ui-parity.md`, `docs/hardware-parity.md`, `docs/localization-parity.md`. When work lands, update the gap, the parity doc and the progress log, and bump each touched doc's status line and revision history.
 

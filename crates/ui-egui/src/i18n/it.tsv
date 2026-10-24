@@ -2799,3 +2799,46 @@ template	Letter	Lettera
 	More tabs	Altre schede
 # #3013: Insert Table of Figures
 	Include label and number	Includi etichetta e numero
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	In attesa di Claude…
+	Cancelling…	Annullamento…
+	Request cancelled. Text already sent cannot be retracted.	Richiesta annullata. Il testo già inviato non può essere ritirato.
+	Writing Assistant	Assistente scrittura
+	Writing\nAssistant	Assistente\nscrittura
+	Check connection	Verifica connessione
+	Connected with Claude account	Connesso con account Claude
+	Disconnected / authentication required	Disconnesso / autenticazione richiesta
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Utilizza Claude Code ufficiale con il tuo account/OAuth. Nessuna chiave API o provider di riserva.
+	Sign in or change account	Accedi o cambia account
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Installa Claude Code, quindi esegui `claude auth login` nel terminale. Per cambiare account, usa il flusso ufficiale di disconnessione/accesso e verifica nuovamente la connessione.
+	Official authentication instructions	Istruzioni ufficiali di autenticazione
+	Scope	Ambito
+	Automatic: selected text, or the current paragraph when nothing is selected.	Automatico: testo selezionato oppure il paragrafo corrente se non è selezionato nulla.
+	Include the whole document as context	Includi l'intero documento come contesto
+	I approve sending the whole document for this request	Approvo l'invio dell'intero documento per questa richiesta
+	What would you like to do with this text?	Cosa vuoi fare con questo testo?
+	Improve writing	Migliora scrittura
+	Make concise	Rendi conciso
+	More formal	Rendi più formale
+	More informal	Rendi più informale
+	Correct spelling and grammar	Correggi ortografia e grammatica
+	Summarize	Riassumi
+	Tone	Tono
+	Rewrite tone	Riscrivi tono
+	Generate	Genera
+	Explain / suggest improvements	Spiega / suggerisci miglioramenti
+	Claude is processing…	Claude sta elaborando…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Viene inviato solo il testo esplicitamente richiesto. Verifica prima di applicare. La cronologia resta nella memoria di questa finestra e viene cancellata all'uscita.
+	Proposal	Proposta
+	The document changed. Regenerate before applying this proposal.	Il documento è cambiato. Genera di nuovo prima di applicare questa proposta.
+	Applied	Applicato
+	Apply all	Applica tutto
+	Discard	Scarta
+	Regenerate	Rigenera
+	Undo last application	Annulla ultima applicazione
+	Original	Originale
+	Section	Sezione
+	Request	Richiesta
+	Writing Assistant Context	Contesto Assistente scrittura
+	Apply Writing Assistant Changes	Applica modifiche Assistente scrittura
+	Claude Code default	Predefinito di Claude Code

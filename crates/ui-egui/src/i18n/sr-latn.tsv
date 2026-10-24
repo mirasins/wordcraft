@@ -2377,3 +2377,46 @@
 	More tabs	Još kartica
 # #3013: Insert Table of Figures
 	Include label and number	Uključi oznaku i broj
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Čekanje na Claude…
+	Cancelling…	Otkazivanje…
+	Request cancelled. Text already sent cannot be retracted.	Zahtev je otkazan. Već poslati tekst ne može se povući.
+	Writing Assistant	Pomoćnik za pisanje
+	Writing\nAssistant	Pomoćnik\nza pisanje
+	Check connection	Proveri vezu
+	Connected with Claude account	Povezano sa Claude nalogom
+	Disconnected / authentication required	Veza prekinuta / potrebna je autentifikacija
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Koristi zvanični Claude Code sa vašim nalogom/OAuth. Bez API ključeva i rezervnih provajdera.
+	Sign in or change account	Prijavite se ili promenite nalog
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Instalirajte Claude Code, zatim u terminalu pokrenite `claude auth login`. Da biste promenili nalog, koristite zvanični tok odjave/prijave i ponovo proverite vezu.
+	Official authentication instructions	Zvanična uputstva za autentifikaciju
+	Scope	Opseg
+	Automatic: selected text, or the current paragraph when nothing is selected.	Automatski: izabrani tekst ili tekući pasus ako ništa nije izabrano.
+	Include the whole document as context	Uključi ceo dokument kao kontekst
+	I approve sending the whole document for this request	Odobravam slanje celog dokumenta za ovaj zahtev
+	What would you like to do with this text?	Šta želite da uradite sa ovim tekstom?
+	Improve writing	Poboljšaj pisanje
+	Make concise	Skrati
+	More formal	Formalnije
+	More informal	Neformalnije
+	Correct spelling and grammar	Ispravi pravopis i gramatiku
+	Summarize	Sažmi
+	Tone	Ton
+	Rewrite tone	Prepiši ton
+	Generate	Generiši
+	Explain / suggest improvements	Objasni / predloži poboljšanja
+	Claude is processing…	Claude obrađuje…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Šalje se samo izričito zatraženi tekst. Pregledajte pre primene. Istorija ostaje u memoriji ovog prozora i briše se pri izlasku.
+	Proposal	Predlog
+	The document changed. Regenerate before applying this proposal.	Dokument je izmenjen. Ponovo generišite pre primene ovog predloga.
+	Applied	Primenjeno
+	Apply all	Primeni sve
+	Discard	Odbaci
+	Regenerate	Generiši ponovo
+	Undo last application	Poništi poslednju primenu
+	Original	Original
+	Section	Odeljak
+	Request	Zahtev
+	Writing Assistant Context	Kontekst pomoćnika za pisanje
+	Apply Writing Assistant Changes	Primeni izmene pomoćnika za pisanje
+	Claude Code default	Podrazumevano za Claude Code

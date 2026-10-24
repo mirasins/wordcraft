@@ -23,6 +23,9 @@ const _: () = assert!(BIG_ICON_Y + 16.0 <= BIG_LABEL_Y);
 /// Shortcut text for a command (`⌘B` on macOS, `Ctrl+B` elsewhere): its first key in effect,
 /// custom keys included (Customize Keyboard).
 pub fn shortcut_text(app: &WordApp, id: &str) -> String {
+    if id == "ui.assistant" {
+        return key_text("Mod+Alt+Shift+A");
+    }
     let keys = app.session.keymap.keys_for(&app.session.registry, id);
     keys.first().map(|k| key_text(k)).unwrap_or_default()
 }

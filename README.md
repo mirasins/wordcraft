@@ -170,6 +170,15 @@ can check their work through `inspect_document` without screenshots. See [docs/m
 and the [control protocol](docs/control-protocol.md). Macros record any sequence of commands and
 play it back (`tools.recordMacro`, `tools.macros`).
 
+## Writing assistant
+
+WordCraft can draft, rewrite, translate and summarise text with the official Claude Code CLI and
+your own account (Review › Writing Assistant), with the Claude model you choose (or Claude Code's
+default). It has been checked end to end with a live account on Windows; a screen-reader pass and
+macOS/Linux runs are open. Only text you choose is sent;
+see [docs/writing-assistant.md](docs/writing-assistant.md) for users and
+[docs/writing-assistant-development.md](docs/writing-assistant-development.md) for developers.
+
 ## Logs
 
 The desktop app writes its log records to standard error and to `logs/wordcraft.log` next to its

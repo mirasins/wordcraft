@@ -2379,3 +2379,46 @@
 	More tabs	Інші вкладки
 # #3013: Insert Table of Figures
 	Include label and number	Додавати мітку й номер
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Очікування Claude…
+	Cancelling…	Скасування…
+	Request cancelled. Text already sent cannot be retracted.	Запит скасовано. Текст, який уже надіслано, не можна відкликати.
+	Writing Assistant	Помічник із письма
+	Writing\nAssistant	Помічник\nіз письма
+	Check connection	Перевірити з'єднання
+	Connected with Claude account	З'єднано з обліковим записом Claude
+	Disconnected / authentication required	Від'єднано / потрібна автентифікація
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Використовує офіційний Claude Code з вашим обліковим записом/OAuth. Без ключів API та резервних постачальників.
+	Sign in or change account	Увійти або змінити обліковий запис
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Установіть Claude Code, потім виконайте `claude auth login` у терміналі. Щоб змінити обліковий запис, скористайтеся його офіційним процесом виходу/входу та знову перевірте з'єднання.
+	Official authentication instructions	Офіційні інструкції з автентифікації
+	Scope	Область
+	Automatic: selected text, or the current paragraph when nothing is selected.	Автоматично: виділений текст або поточний абзац, якщо нічого не виділено.
+	Include the whole document as context	Додати весь документ як контекст
+	I approve sending the whole document for this request	Я погоджуюся надіслати весь документ для цього запиту
+	What would you like to do with this text?	Що ви хочете зробити з цим текстом?
+	Improve writing	Покращити текст
+	Make concise	Скоротити
+	More formal	Формальніше
+	More informal	Неформальніше
+	Correct spelling and grammar	Виправити орфографію та граматику
+	Summarize	Підсумувати
+	Tone	Тон
+	Rewrite tone	Переписати тон
+	Generate	Згенерувати
+	Explain / suggest improvements	Пояснити / запропонувати покращення
+	Claude is processing…	Claude обробляє…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Надсилається лише текст, який ви явно запросили. Перегляньте перед застосуванням. Історія зберігається в пам'яті цього вікна й очищується під час виходу.
+	Proposal	Пропозиція
+	The document changed. Regenerate before applying this proposal.	Документ змінено. Згенеруйте пропозицію знову, перш ніж застосовувати її.
+	Applied	Застосовано
+	Apply all	Застосувати все
+	Discard	Відхилити
+	Regenerate	Згенерувати знову
+	Undo last application	Скасувати останнє застосування
+	Original	Оригінал
+	Section	Розділ
+	Request	Запит
+	Writing Assistant Context	Контекст помічника із письма
+	Apply Writing Assistant Changes	Застосувати зміни помічника із письма
+	Claude Code default	Типове для Claude Code

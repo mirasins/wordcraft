@@ -2368,3 +2368,46 @@
 	More tabs	更多索引標籤
 # #3013: Insert Table of Figures
 	Include label and number	包含標籤和編號
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	等待 Claude…
+	Cancelling…	正在取消…
+	Request cancelled. Text already sent cannot be retracted.	請求已取消。已傳送的文字無法撤回。
+	Writing Assistant	寫作助理
+	Writing\nAssistant	寫作\n助理
+	Check connection	檢查連線
+	Connected with Claude account	已連線至 Claude 帳戶
+	Disconnected / authentication required	已中斷連線 / 需要驗證
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	使用您帳戶/OAuth 的官方 Claude Code。不使用 API 金鑰或備用提供者。
+	Sign in or change account	登入或變更帳戶
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	安裝 Claude Code，然後在終端機中執行 `claude auth login`。若要變更帳戶，請使用其官方登出/登入流程，然後重新檢查連線。
+	Official authentication instructions	官方驗證說明
+	Scope	範圍
+	Automatic: selected text, or the current paragraph when nothing is selected.	自動：所選文字；未選取任何內容時為目前段落。
+	Include the whole document as context	將整份文件納入為內容脈絡
+	I approve sending the whole document for this request	我同意為此請求傳送整份文件
+	What would you like to do with this text?	您想如何處理這段文字？
+	Improve writing	改善寫作
+	Make concise	精簡
+	More formal	更正式
+	More informal	更口語
+	Correct spelling and grammar	修正拼字和文法
+	Summarize	摘要
+	Tone	語氣
+	Rewrite tone	改寫語氣
+	Generate	產生
+	Explain / suggest improvements	說明 / 建議改進
+	Claude is processing…	Claude 正在處理…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	僅傳送明確要求的文字。套用前請先檢視。紀錄保存在此視窗的記憶體中，結束時清除。
+	Proposal	建議
+	The document changed. Regenerate before applying this proposal.	文件已變更。套用此建議前請重新產生。
+	Applied	已套用
+	Apply all	全部套用
+	Discard	捨棄
+	Regenerate	重新產生
+	Undo last application	復原上次套用
+	Original	原文
+	Section	章節
+	Request	要求
+	Writing Assistant Context	寫作助理內容脈絡
+	Apply Writing Assistant Changes	套用寫作助理變更
+	Claude Code default	Claude Code 預設
