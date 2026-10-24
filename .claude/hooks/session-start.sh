@@ -26,6 +26,6 @@ fi
 rustup component add clippy rustfmt >/dev/null
 rustup target add wasm32-unknown-unknown >/dev/null
 
-# Warm the build cache so tests and clippy start fast.
+# Download crates so builds work offline-fast. A full workspace build is left out:
+# it takes over 10 minutes and exceeds the cloud session disk allowance.
 cargo fetch --locked
-cargo build --workspace --all-targets --locked -q
