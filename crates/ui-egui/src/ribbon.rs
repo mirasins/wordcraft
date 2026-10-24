@@ -2126,8 +2126,8 @@ fn zotero(app: &mut WordApp, ui: &mut Ui) {
 }
 
 fn review(app: &mut WordApp, ui: &mut Ui) {
-    group(ui, "Writing Assistant", None, app, |ui, app| {
-        big(ui, app, "assistant", "Writing\nAssistant", "ui.assistant", json!({"value": true}), false);
+    group(ui, "Mirai Assistant", None, app, |ui, app| {
+        big(ui, app, "assistant", "Mirai\nAssistant", "ui.assistant", json!({"value": true}), false);
     });
     group(ui, "Proofing", None, app, |ui, app| {
         big(ui, app, "spelling", "Spelling &\nGrammar", "review.spelling", json!({}), false);

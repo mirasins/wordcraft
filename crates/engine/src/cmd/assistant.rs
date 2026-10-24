@@ -8,10 +8,10 @@ use crate::{CmdError, CmdResult, CommandSpec, Session};
 
 pub fn specs() -> Vec<CommandSpec> {
     vec![
-        CommandSpec::new("assistant.context", "Writing Assistant Context", "Review › Writing Assistant", context)
+        CommandSpec::new("assistant.context", "Mirai Assistant Context", "Review › Mirai Assistant", context)
             .params(r#"{"scope": "auto" | "selection" | "paragraph" | "section" | "document", "confirm_document"?: bool}"#)
             .pure(),
-        CommandSpec::new("assistant.apply", "Apply Writing Assistant Changes", "Review › Writing Assistant", apply)
+        CommandSpec::new("assistant.apply", "Apply Mirai Assistant Changes", "Review › Mirai Assistant", apply)
             .params(r#"{"context": Context, "changes": [{"index": number, "text": string}]}"#),
     ]
 }

@@ -3,8 +3,8 @@
 	Waiting for Claude…	Wachten op Claude…
 	Cancelling…	Annuleren…
 	Request cancelled. Text already sent cannot be retracted.	Verzoek geannuleerd. Tekst die al is verzonden, kan niet worden ingetrokken.
-	Writing Assistant	Schrijfassistent
-	Writing\nAssistant	Schrijf\nassistent
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Verbinding controleren
 	Connected with Claude account	Verbonden met Claude-account
 	Disconnected / authentication required	Verbinding verbroken / authenticatie vereist
@@ -39,8 +39,8 @@ assistant	Discard	Verwerpen
 assistant	Original	Origineel
 	Section	Sectie
 	Request	Verzoek
-	Writing Assistant Context	Context van schrijfassistent
-	Apply Writing Assistant Changes	Wijzigingen schrijfassistent toepassen
+	Mirai Assistant Context	Context van Mirai Assistant
+	Apply Mirai Assistant Changes	Wijzigingen Mirai Assistant toepassen
 	Claude Code default	Standaard van Claude Code
 	You	U
 	Conversation	Gesprek

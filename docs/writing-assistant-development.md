@@ -39,7 +39,7 @@ depend on it; the engine does not, so `assistant.context`/`assistant.apply` neve
 | `crates/engine/src/cmd/assistant.rs` | Registers `assistant.context` and `assistant.apply` |
 | `crates/engine/src/tests_assistant.rs` | Scopes, consent, stale ids, bounds, undo |
 | `crates/ui-egui/src/assistant.rs` | Window, `ui.assistant`, `assistant.*` UI commands, worker thread, history, accept |
-| `crates/ui-egui/src/ribbon.rs`, `canvas.rs`, `keys.rs`, `widgets.rs` | Review ribbon button (`Writing\nAssistant`), context menu item, Ctrl/Cmd+Alt+Shift+A and its shortcut text |
+| `crates/ui-egui/src/ribbon.rs`, `canvas.rs`, `keys.rs`, `widgets.rs` | Review ribbon button (`Mirai\nAssistant`), context menu item, Ctrl/Cmd+Alt+Shift+A and its shortcut text |
 | `crates/ui-egui/src/lib.rs`, `control.rs` | `WordApp::assistant` state, dispatch, per-frame `poll`, Escape and refocus rules; control-channel command list |
 | `crates/ui-egui/src/assistant-i18n/*.tsv` | Assistant-only translation overlays, preserved from the fork's original catalogs (drafts pending native review) |
 | `crates/ui-egui/build.rs`, `src/i18n/assistant_catalog.rs` | Merge the overlays into the external `craft-i18n` app catalogs at build time |

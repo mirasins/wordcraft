@@ -3,8 +3,8 @@
 	Waiting for Claude…	Se așteaptă Claude…
 	Cancelling…	Se anulează…
 	Request cancelled. Text already sent cannot be retracted.	Solicitarea a fost anulată. Textul deja trimis nu poate fi retras.
-	Writing Assistant	Asistent de scriere
-	Writing\nAssistant	Asistent\nde scriere
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Verifică conexiunea
 	Connected with Claude account	Conectat cu contul Claude
 	Disconnected / authentication required	Deconectat / autentificare necesară
@@ -39,8 +39,8 @@ assistant	Discard	Renunță
 assistant	Original	Original
 	Section	Secțiune
 	Request	Solicitare
-	Writing Assistant Context	Contextul asistentului de scriere
-	Apply Writing Assistant Changes	Aplică modificările asistentului de scriere
+	Mirai Assistant Context	Contextul Mirai Assistant
+	Apply Mirai Assistant Changes	Aplică modificările Mirai Assistant
 	Claude Code default	Implicit Claude Code
 	You	Dvs.
 	Conversation	Conversație

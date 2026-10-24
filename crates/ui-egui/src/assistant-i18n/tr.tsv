@@ -3,8 +3,8 @@
 	Waiting for Claude…	Claude için bekleniyor…
 	Cancelling…	İptal ediliyor…
 	Request cancelled. Text already sent cannot be retracted.	İstek iptal edildi. Gönderilmiş metin geri alınamaz.
-	Writing Assistant	Yazma Asistanı
-	Writing\nAssistant	Yazma\nAsistanı
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Bağlantıyı denetle
 	Connected with Claude account	Claude hesabıyla bağlandı
 	Disconnected / authentication required	Bağlantı kesildi / kimlik doğrulama gerekli
@@ -39,8 +39,8 @@ assistant	Discard	Vazgeç
 assistant	Original	Özgün
 	Section	Bölüm
 	Request	İstek
-	Writing Assistant Context	Yazma Asistanı Bağlamı
-	Apply Writing Assistant Changes	Yazma Asistanı Değişikliklerini Uygula
+	Mirai Assistant Context	Mirai Assistant Bağlamı
+	Apply Mirai Assistant Changes	Mirai Assistant Değişikliklerini Uygula
 	Claude Code default	Claude Code varsayılanı
 	You	Siz
 	Conversation	Sohbet

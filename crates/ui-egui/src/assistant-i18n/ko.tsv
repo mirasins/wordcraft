@@ -3,8 +3,8 @@
 	Waiting for Claude…	Claude 응답 대기 중…
 	Cancelling…	취소하는 중…
 	Request cancelled. Text already sent cannot be retracted.	요청이 취소되었습니다. 이미 전송된 텍스트는 회수할 수 없습니다.
-	Writing Assistant	글쓰기 도우미
-	Writing\nAssistant	글쓰기\n도우미
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	연결 확인
 	Connected with Claude account	Claude 계정에 연결됨
 	Disconnected / authentication required	연결 끊김 / 인증 필요
@@ -39,8 +39,8 @@ assistant	Discard	취소
 assistant	Original	원본
 	Section	섹션
 	Request	요청
-	Writing Assistant Context	글쓰기 도우미 컨텍스트
-	Apply Writing Assistant Changes	글쓰기 도우미 변경 사항 적용
+	Mirai Assistant Context	Mirai Assistant 컨텍스트
+	Apply Mirai Assistant Changes	Mirai Assistant 변경 사항 적용
 	Claude Code default	Claude Code 기본값
 	You	나
 	Conversation	대화

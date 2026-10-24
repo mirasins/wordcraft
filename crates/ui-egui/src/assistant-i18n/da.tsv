@@ -3,8 +3,8 @@
 	Waiting for Claude…	Venter på Claude…
 	Cancelling…	Annullerer…
 	Request cancelled. Text already sent cannot be retracted.	Anmodningen blev annulleret. Tekst, der allerede er sendt, kan ikke trækkes tilbage.
-	Writing Assistant	Skriveassistent
-	Writing\nAssistant	Skrive\nassistent
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Kontrollér forbindelse
 	Connected with Claude account	Forbundet med Claude-konto
 	Disconnected / authentication required	Afbrudt / godkendelse påkrævet
@@ -39,8 +39,8 @@ assistant	Discard	Kassér
 assistant	Original	Original
 	Section	Afsnit
 	Request	Anmodning
-	Writing Assistant Context	Kontekst for skriveassistent
-	Apply Writing Assistant Changes	Anvend ændringer fra skriveassistent
+	Mirai Assistant Context	Kontekst for Mirai Assistant
+	Apply Mirai Assistant Changes	Anvend ændringer fra Mirai Assistant
 	Claude Code default	Claude Code-standard
 	You	Du
 	Conversation	Samtale

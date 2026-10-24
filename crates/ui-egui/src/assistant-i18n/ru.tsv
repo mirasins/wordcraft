@@ -3,8 +3,8 @@
 	Waiting for Claude…	Ожидание Claude…
 	Cancelling…	Отмена…
 	Request cancelled. Text already sent cannot be retracted.	Запрос отменён. Уже отправленный текст нельзя отозвать.
-	Writing Assistant	Помощник по написанию
-	Writing\nAssistant	Помощник\nпо написанию
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Проверить подключение
 	Connected with Claude account	Подключено к учётной записи Claude
 	Disconnected / authentication required	Отключено / требуется аутентификация
@@ -39,8 +39,8 @@ assistant	Discard	Отменить
 assistant	Original	Оригинал
 	Section	Раздел
 	Request	Запрос
-	Writing Assistant Context	Контекст помощника по написанию
-	Apply Writing Assistant Changes	Применить изменения помощника по написанию
+	Mirai Assistant Context	Контекст Mirai Assistant
+	Apply Mirai Assistant Changes	Применить изменения Mirai Assistant
 	Claude Code default	По умолчанию для Claude Code
 	You	Вы
 	Conversation	Беседа

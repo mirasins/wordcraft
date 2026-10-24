@@ -138,7 +138,7 @@ pub fn command_metadata() -> Value {
     json!({
         "id": "assistant.suggest",
         "label": "Request writing suggestions",
-        "location": "Review › Writing Assistant",
+        "location": "Review › Mirai Assistant",
         "shortcut": null,
         "params": "instruction: string; scope?: auto|selection|paragraph|section|document; confirm_document?: bool; include_document_context?: bool; explain_only?: bool; model?: string (Claude alias or id, e.g. sonnet, opus). Sends the chosen text to Claude; synchronous in the headless backend.",
         "mutates": false,

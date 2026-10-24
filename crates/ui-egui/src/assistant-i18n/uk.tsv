@@ -3,8 +3,8 @@
 	Waiting for Claude…	Очікування Claude…
 	Cancelling…	Скасування…
 	Request cancelled. Text already sent cannot be retracted.	Запит скасовано. Текст, який уже надіслано, не можна відкликати.
-	Writing Assistant	Помічник із письма
-	Writing\nAssistant	Помічник\nіз письма
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Перевірити з'єднання
 	Connected with Claude account	З'єднано з обліковим записом Claude
 	Disconnected / authentication required	Від'єднано / потрібна автентифікація
@@ -39,8 +39,8 @@ assistant	Discard	Відхилити
 assistant	Original	Оригінал
 	Section	Розділ
 	Request	Запит
-	Writing Assistant Context	Контекст помічника із письма
-	Apply Writing Assistant Changes	Застосувати зміни помічника із письма
+	Mirai Assistant Context	Контекст Mirai Assistant
+	Apply Mirai Assistant Changes	Застосувати зміни Mirai Assistant
 	Claude Code default	Типове для Claude Code
 	You	Ви
 	Conversation	Розмова

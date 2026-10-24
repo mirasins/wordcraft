@@ -3,8 +3,8 @@
 	Waiting for Claude…	Ootan Claude'i…
 	Cancelling…	Tühistamine…
 	Request cancelled. Text already sent cannot be retracted.	Päring tühistati. Juba saadetud teksti ei saa tagasi võtta.
-	Writing Assistant	Kirjutamisabiline
-	Writing\nAssistant	Kirjutamis\nabiline
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Kontrolli ühendust
 	Connected with Claude account	Ühendatud Claude'i kontoga
 	Disconnected / authentication required	Ühendus katkestatud / autentimine on vajalik
@@ -39,8 +39,8 @@ assistant	Discard	Loobu
 assistant	Original	Algne
 	Section	Jaotis
 	Request	Päring
-	Writing Assistant Context	Kirjutamisabilise kontekst
-	Apply Writing Assistant Changes	Rakenda kirjutamisabilise muudatused
+	Mirai Assistant Context	Mirai Assistanti kontekst
+	Apply Mirai Assistant Changes	Rakenda Mirai Assistanti muudatused
 	Claude Code default	Claude Code'i vaikimisi
 	You	Sina
 	Conversation	Vestlus

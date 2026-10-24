@@ -13,7 +13,7 @@ HTTP calls and no other providers, and it never reads, copies or stores your cre
 
 1. Install [Claude Code](https://code.claude.com) so that `claude` is on your `PATH`.
 2. Sign in with Claude Code's own flow, for example `claude auth login` in a terminal.
-3. In WordCraft, open **Review › Writing Assistant** and choose **Check connection**.
+3. In WordCraft, open **Review › Mirai Assistant** and choose **Check connection**.
 
 If you can't sign in through a browser, `claude setup-token` makes a long-lived token for your
 subscription; set it as `CLAUDE_CODE_OAUTH_TOKEN` before starting WordCraft. WordCraft uses a
@@ -29,8 +29,8 @@ The desktop app is required; the web build reports the assistant as unavailable.
 
 ## Opening it
 
-- **Review › Writing Assistant** in the ribbon.
-- **Writing Assistant** in the right-click menu.
+- **Review › Mirai Assistant** in the ribbon.
+- **Mirai Assistant** in the right-click menu.
 - **Ctrl+Alt+Shift+A** on Windows and Linux, **Cmd+Option+Shift+A** on macOS.
 
 Opening the window sends nothing and starts no process. **Escape** closes it (and cancels a

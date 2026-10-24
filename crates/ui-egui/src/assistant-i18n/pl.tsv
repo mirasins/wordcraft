@@ -3,8 +3,8 @@
 	Waiting for Claude…	Oczekiwanie na Claude…
 	Cancelling…	Anulowanie…
 	Request cancelled. Text already sent cannot be retracted.	Anulowano żądanie. Wysłanego tekstu nie można cofnąć.
-	Writing Assistant	Asystent pisania
-	Writing\nAssistant	Asystent\npisania
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Sprawdź połączenie
 	Connected with Claude account	Połączono z kontem Claude
 	Disconnected / authentication required	Rozłączono / wymagane uwierzytelnienie
@@ -39,8 +39,8 @@ assistant	Discard	Odrzuć
 assistant	Original	Oryginał
 	Section	Sekcja
 	Request	Żądanie
-	Writing Assistant Context	Kontekst asystenta pisania
-	Apply Writing Assistant Changes	Zastosuj zmiany asystenta pisania
+	Mirai Assistant Context	Kontekst Mirai Assistant
+	Apply Mirai Assistant Changes	Zastosuj zmiany Mirai Assistant
 	Claude Code default	Domyślny Claude Code
 	You	Ty
 	Conversation	Rozmowa

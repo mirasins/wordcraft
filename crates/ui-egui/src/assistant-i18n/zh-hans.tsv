@@ -3,8 +3,8 @@
 	Waiting for Claude…	等待 Claude…
 	Cancelling…	正在取消…
 	Request cancelled. Text already sent cannot be retracted.	请求已取消。已发送的文本无法撤回。
-	Writing Assistant	写作助手
-	Writing\nAssistant	写作\n助手
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	检查连接
 	Connected with Claude account	已连接 Claude 账户
 	Disconnected / authentication required	已断开连接 / 需要身份验证
@@ -39,8 +39,8 @@ assistant	Discard	放弃
 assistant	Original	原文
 	Section	节
 	Request	请求
-	Writing Assistant Context	写作助手上下文
-	Apply Writing Assistant Changes	应用写作助手更改
+	Mirai Assistant Context	Mirai Assistant上下文
+	Apply Mirai Assistant Changes	应用Mirai Assistant更改
 	Claude Code default	Claude Code 默认
 	You	您
 	Conversation	对话

@@ -3,8 +3,8 @@
 	Waiting for Claude…	Đang chờ Claude…
 	Cancelling…	Đang hủy…
 	Request cancelled. Text already sent cannot be retracted.	Đã hủy yêu cầu. Văn bản đã gửi không thể thu hồi.
-	Writing Assistant	Trợ lý viết
-	Writing\nAssistant	Trợ lý\nviết
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Kiểm tra kết nối
 	Connected with Claude account	Đã kết nối với tài khoản Claude
 	Disconnected / authentication required	Đã ngắt kết nối / cần xác thực
@@ -39,8 +39,8 @@ assistant	Discard	Hủy bỏ
 assistant	Original	Bản gốc
 	Section	Phần
 	Request	Yêu cầu
-	Writing Assistant Context	Ngữ cảnh Trợ lý viết
-	Apply Writing Assistant Changes	Áp dụng thay đổi của Trợ lý viết
+	Mirai Assistant Context	Ngữ cảnh Mirai Assistant
+	Apply Mirai Assistant Changes	Áp dụng thay đổi của Mirai Assistant
 	Claude Code default	Mặc định của Claude Code
 	You	Bạn
 	Conversation	Cuộc trò chuyện

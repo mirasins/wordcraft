@@ -173,7 +173,7 @@ play it back (`tools.recordMacro`, `tools.macros`).
 ## Writing assistant
 
 WordCraft can draft, rewrite, translate and summarise text with the official Claude Code CLI and
-your own account (Review › Writing Assistant), with the Claude model you choose (or Claude Code's
+your own account (Review › Mirai Assistant), with the Claude model you choose (or Claude Code's
 default). It has been checked end to end with a live account on Windows; a screen-reader pass and
 macOS/Linux runs are open. Only text you choose is sent;
 see [docs/writing-assistant.md](docs/writing-assistant.md) for users and

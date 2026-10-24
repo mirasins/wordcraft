@@ -111,14 +111,14 @@ impl Drop for State {
 /// UI/control command metadata. Merely enumerating commands never starts Claude Code.
 pub fn commands() -> Vec<Value> {
     [
-        ("ui.assistant", "Writing Assistant", "value?: bool; omitted toggles the floating window"),
+        ("ui.assistant", "Mirai Assistant", "value?: bool; omitted toggles the floating window"),
         ("assistant.auth", "Check Claude connection", "Checks the official Claude Code account/OAuth login; no document is sent"),
         ("assistant.suggest", "Request writing suggestions", "instruction: string; scope?: auto|selection|paragraph|section|document; confirm_document?: bool; include_document_context?: bool; explain_only?: bool; model?: string (Claude alias or id; omitted: Claude Code default). Sends the chosen text to Claude. Returns a job; poll assistant.status."),
         ("assistant.status", "Writing assistant status", "Returns busy, connection, message and local proposals"),
         ("assistant.cancel", "Cancel writing request", "Cancels the running local Claude Code process; cannot retract already transmitted text"),
         ("assistant.accept", "Apply writing suggestion", "id: proposal id; index?: target index (omitted applies all pending suggestions)"),
         ("assistant.discard", "Discard writing suggestion", "id: proposal id"),
-    ].into_iter().map(|(id, label, params)| json!({"id":id,"label":label,"location":"Review › Writing Assistant",
+    ].into_iter().map(|(id, label, params)| json!({"id":id,"label":label,"location":"Review › Mirai Assistant",
         "shortcut":if id == "ui.assistant" { Some("Mod+Alt+Shift+A") } else { None },"params":params,"enabled":true})).collect()
 }
 
@@ -559,7 +559,7 @@ pub fn show(app: &mut WordApp, ctx: &egui::Context) {
     // so the Escape that closes the popup doesn't close the window too.
     let escape = !egui::Popup::is_any_open(ctx) && ctx.input(|i| i.key_pressed(egui::Key::Escape));
     let live = (app.session.document_id(), app.session.rev());
-    egui::Window::new(tl!("Writing Assistant"))
+    egui::Window::new(tl!("Mirai Assistant"))
         .id(egui::Id::new("writing-assistant"))
         .open(&mut open)
         // Opens beside the page on the right, away from the text being reviewed.
@@ -587,14 +587,21 @@ pub fn show(app: &mut WordApp, ctx: &egui::Context) {
             let busy = state.pending.is_some();
             account(ui, state, &mut action);
             ui.separator();
+            // Writing is the main job: the draft gets a large share of the window, most of it
+            // while the conversation is still empty.
+            let empty = !busy && !state.history.iter().any(|p| !p.dismissed);
+            let field_height = (ui.available_height() * if empty { 0.4 } else { 0.24 }).clamp(96.0, 420.0);
             egui::Panel::bottom("assistant-composer").frame(egui::Frame::NONE.inner_margin(egui::Margin::symmetric(0, 8))).show(ui, |ui| {
-                ui.add_enabled_ui(!busy, |ui| request(ui, state, &mut action));
-                ui.add_space(4.0);
-                ui.small(tl!(
-                    "Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit."
-                ));
+                ui.add_enabled_ui(!busy, |ui| request(ui, state, field_height, &mut action));
+                ui.add_space(6.0);
+                ui.label(
+                    egui::RichText::new(tl!(
+                        "Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit."
+                    ))
+                    .small()
+                    .color(tokens.assistant_muted),
+                );
             });
-            ui.strong(tl!("Conversation"));
             egui::ScrollArea::vertical().id_salt("assistant-history").auto_shrink([false, false]).stick_to_bottom(true).show(ui, |ui| {
                 history(ui, state, live, &mut action);
                 if let Some(pending) = &state.pending {
@@ -646,10 +653,18 @@ fn account(ui: &mut egui::Ui, state: &State, action: &mut Action) {
     let tokens = crate::theme::Tokens::get(ui.ctx());
     ui.horizontal_wrapped(|ui| {
         if let Some(texture) = icon_texture(ui.ctx()) {
-            ui.add(egui::Image::new((texture.id(), egui::vec2(28.0, 28.0))).alt_text(tl!("Writing Assistant")));
+            ui.add(egui::Image::new((texture.id(), egui::vec2(26.0, 26.0))).corner_radius(7).alt_text(tl!("Mirai Assistant")));
         }
-        ui.label(egui::RichText::new(tl!("Claude")).strong().size(18.0).color(tokens.assistant_accent));
-        ui.small(if state.connection.is_some() { tl!("Connected with Claude account") } else { tl!("Disconnected / authentication required") });
+        ui.label(egui::RichText::new(tl!("Claude")).strong().size(17.0).color(tokens.assistant_accent));
+        // The dot repeats the status; the words carry it, so colour is never the only signal.
+        let connected = state.connection.is_some();
+        let (dot, _) = ui.allocate_exact_size(egui::vec2(8.0, 8.0), egui::Sense::hover());
+        ui.painter().circle_filled(dot.center(), 4.0, if connected { tokens.green } else { tokens.assistant_muted });
+        ui.label(
+            egui::RichText::new(if connected { tl!("Connected with Claude account") } else { tl!("Disconnected / authentication required") })
+                .small()
+                .color(tokens.assistant_muted),
+        );
     });
     ui.collapsing(tl!("Sign in or change account"), |ui| {
         if ui.add_enabled(state.pending.is_none(), egui::Button::new(tl!("Check connection"))).clicked() {
@@ -666,8 +681,104 @@ fn account(ui: &mut egui::Ui, state: &State, action: &mut Action) {
     }
 }
 
-/// Scope, consent, the instruction and the quick actions.
-fn request(ui: &mut egui::Ui, state: &mut State, action: &mut Action) {
+/// A rounded quick-action chip in the design system's lilac.
+fn chip(ui: &mut egui::Ui, label: &str) -> egui::Response {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
+    ui.add(
+        egui::Button::new(egui::RichText::new(label).color(tokens.assistant_accent))
+            .fill(tokens.assistant_bubble)
+            .stroke(egui::Stroke::new(1.0, tokens.assistant_border))
+            .corner_radius(14)
+            .min_size(egui::vec2(0.0, 28.0)),
+    )
+}
+
+/// Quick actions, the draft, model and send, then consent and the less used options. The
+/// one-click actions sit right above the draft so they stay in reach as the conversation grows.
+fn request(ui: &mut egui::Ui, state: &mut State, field_height: f32, action: &mut Action) {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
+    ui.add_enabled_ui(may_send(state), |ui| {
+        ui.horizontal_wrapped(|ui| {
+            ui.spacing_mut().item_spacing = egui::vec2(6.0, 6.0);
+            for (label, instruction) in [
+                ("Improve writing", "Improve the writing, preserving its meaning and language."),
+                ("Make concise", "Make this text more concise, preserving its meaning and language."),
+                ("Correct spelling and grammar", "Correct spelling and grammar only, preserving the language and meaning."),
+            ] {
+                if chip(ui, tl!(label)).clicked() {
+                    *action = Some(("assistant.suggest", request_params(state, instruction, false)));
+                }
+            }
+            if chip(ui, tl!("Explain / suggest improvements")).clicked() {
+                let instruction = format!("Explain the text and suggest improvements. {}", state.instruction);
+                *action = Some(("assistant.suggest", request_params(state, &instruction, true)));
+            }
+        });
+    });
+    ui.add_space(8.0);
+    let can_send = may_send(state) && !state.instruction.trim().is_empty();
+    let field_id = egui::Id::new("assistant-instruction");
+    // Ctrl/Cmd+Enter sends from the draft; plain Enter keeps adding lines. Taken before the
+    // field sees it, so the shortcut never inserts a line break.
+    let shortcut = egui::KeyboardShortcut::new(egui::Modifiers::COMMAND, egui::Key::Enter);
+    if can_send && ui.memory(|m| m.has_focus(field_id)) && ui.input_mut(|i| i.consume_shortcut(&shortcut)) {
+        *action = Some(("assistant.suggest", request_params(state, &state.instruction, false)));
+    }
+    egui::Frame::new()
+        .fill(tokens.assistant_surface)
+        .stroke(egui::Stroke::new(1.0, tokens.assistant_border))
+        .corner_radius(16)
+        .inner_margin(egui::Margin { left: 14, right: 10, top: 12, bottom: 10 })
+        .show(ui, |ui| {
+            let field = egui::ScrollArea::vertical()
+                .id_salt("assistant-draft")
+                .max_height(field_height)
+                .show(ui, |ui| {
+                    ui.add(
+                        egui::TextEdit::multiline(&mut state.instruction)
+                            .id(field_id)
+                            .hint_text(tl!("Write a message to improve your text…"))
+                            .font(egui::FontId::proportional(15.0))
+                            .char_limit(4096)
+                            .frame(egui::Frame::NONE)
+                            .min_size(egui::vec2(0.0, field_height))
+                            .desired_width(f32::INFINITY),
+                    )
+                })
+                .inner;
+            if std::mem::take(&mut state.focus) {
+                field.request_focus();
+            }
+            ui.add_space(6.0);
+            ui.horizontal(|ui| {
+                let model_label = ui.label(egui::RichText::new(tl!("Model")).color(tokens.assistant_muted));
+                egui::ComboBox::from_id_salt("assistant-model")
+                    .selected_text(if state.model.is_empty() { tl!("Claude Code default") } else { state.model.as_str() })
+                    .width(150.0)
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut state.model, String::new(), tl!("Claude Code default"));
+                        for (alias, label) in [("sonnet", "Sonnet"), ("opus", "Opus"), ("haiku", "Haiku")] {
+                            ui.selectable_value(&mut state.model, alias.into(), tl!(label));
+                        }
+                    })
+                    .response
+                    .labelled_by(model_label.id);
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let send = egui::Button::new(egui::RichText::new(tl!("Send message")).strong().color(tokens.assistant_on_button))
+                        .fill(tokens.assistant_button)
+                        .corner_radius(7)
+                        .min_size(egui::vec2(0.0, 32.0));
+                    let hint = format!("{} ({})", tl!("Send message"), ui.ctx().format_shortcut(&shortcut));
+                    if ui.add_enabled(can_send, send).on_hover_text(hint).clicked() {
+                        *action = Some(("assistant.suggest", request_params(state, &state.instruction, false)));
+                    }
+                });
+            });
+        });
+    ui.add_space(4.0);
+    // Always visible, including for an automatic scope covering a one-paragraph document.
+    // Consent remains per request; opening options or typing never grants it.
+    ui.checkbox(&mut state.confirmed, tl!("I approve sending the whole document for this request"));
     ui.collapsing(tl!("Writing options"), |ui| {
         egui::ScrollArea::vertical().id_salt("assistant-options").max_height(180.0).show(ui, |ui| {
             ui.horizontal(|ui| {
@@ -690,15 +801,13 @@ fn request(ui: &mut egui::Ui, state: &mut State, action: &mut Action) {
             }
             ui.add_enabled_ui(may_send(state), |ui| {
                 ui.horizontal_wrapped(|ui| {
+                    // The everyday actions are chips above the draft; these are the rarer ones.
                     for (label, instruction) in [
-                        ("Improve writing", "Improve the writing, preserving its meaning and language."),
-                        ("Make concise", "Make this text more concise, preserving its meaning and language."),
                         ("More formal", "Rewrite in a more formal tone, preserving its language."),
                         ("More informal", "Rewrite in a more informal tone, preserving its language."),
-                        ("Correct spelling and grammar", "Correct spelling and grammar only, preserving the language and meaning."),
                         ("Summarize", "Summarize concisely in the same language. Keep the response mapped to the supplied paragraph indices."),
                     ] {
-                        if ui.add_sized([135.0, 32.0], egui::Button::new(tl!(label))).clicked() {
+                        if chip(ui, tl!(label)).clicked() {
                             *action = Some(("assistant.suggest", request_params(state, instruction, false)));
                         }
                     }
@@ -720,69 +829,21 @@ fn request(ui: &mut egui::Ui, state: &mut State, action: &mut Action) {
             });
         });
     });
-    // Always visible, including for an automatic scope covering a one-paragraph document.
-    // Consent remains per request; opening options or typing never grants it.
-    ui.checkbox(&mut state.confirmed, tl!("I approve sending the whole document for this request"));
-    let tokens = crate::theme::Tokens::get(ui.ctx());
-    egui::Frame::new().fill(tokens.input).stroke(egui::Stroke::new(1.0, tokens.assistant_border)).corner_radius(20).inner_margin(16).show(ui, |ui| {
-        let field = egui::ScrollArea::vertical()
-            .id_salt("assistant-draft")
-            .max_height(160.0)
-            .show(ui, |ui| {
-                ui.add(
-                    egui::TextEdit::multiline(&mut state.instruction)
-                        .id_salt("assistant-instruction")
-                        .hint_text(tl!("Write a message to improve your text…"))
-                        .desired_rows(5)
-                        .char_limit(4096)
-                        .frame(egui::Frame::NONE)
-                        .desired_width(f32::INFINITY),
-                )
-            })
-            .inner;
-        if std::mem::take(&mut state.focus) {
-            field.request_focus();
-        }
-        ui.horizontal_wrapped(|ui| {
-            let model_label = ui.label(tl!("Model"));
-            egui::ComboBox::from_id_salt("assistant-model")
-                .selected_text(if state.model.is_empty() { tl!("Claude Code default") } else { state.model.as_str() })
-                .width(130.0)
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut state.model, String::new(), tl!("Claude Code default"));
-                    for (alias, label) in [("sonnet", "Sonnet"), ("opus", "Opus"), ("haiku", "Haiku")] {
-                        ui.selectable_value(&mut state.model, alias.into(), tl!(label));
-                    }
-                })
-                .response
-                .labelled_by(model_label.id);
-            let send = egui::Button::new(egui::RichText::new(tl!("Send message")).color(tokens.assistant_background))
-                .fill(tokens.assistant_accent)
-                .corner_radius(8)
-                .min_size(egui::vec2(100.0, 32.0));
-            if ui.add_enabled(may_send(state) && !state.instruction.trim().is_empty(), send).clicked() {
-                *action = Some(("assistant.suggest", request_params(state, &state.instruction, false)));
-            }
-            if ui.add_enabled(may_send(state), egui::Button::new(tl!("Explain / suggest improvements"))).clicked() {
-                let instruction = format!("Explain the text and suggest improvements. {}", state.instruction);
-                *action = Some(("assistant.suggest", request_params(state, &instruction, true)));
-            }
-        });
-    });
 }
 
 /// Role labels keep the conversation understandable without depending on bubble colour.
 fn message(ui: &mut egui::Ui, role: &str, text: &str, user: bool) {
     let tokens = crate::theme::Tokens::get(ui.ctx());
     egui::Frame::new()
-        .fill(if user { tokens.assistant_bubble } else { tokens.input })
+        .fill(if user { tokens.assistant_bubble } else { tokens.assistant_surface })
         .stroke(egui::Stroke::new(1.0, tokens.assistant_border))
-        .corner_radius(10)
-        .inner_margin(12)
+        .corner_radius(14)
+        .inner_margin(egui::Margin::symmetric(14, 10))
         .show(ui, |ui| {
             ui.set_width((ui.available_width() - 2.0).max(0.0));
-            ui.label(egui::RichText::new(role).strong().color(tokens.assistant_accent));
-            ui.label(text);
+            ui.label(egui::RichText::new(role).small().strong().color(tokens.assistant_accent));
+            ui.add_space(2.0);
+            ui.label(egui::RichText::new(text).size(14.5));
         });
     ui.add_space(8.0);
 }
@@ -797,29 +858,17 @@ fn may_send(state: &State) -> bool {
 fn history(ui: &mut egui::Ui, state: &State, live: (u64, u64), action: &mut Action) {
     let busy = state.pending.is_some();
     if !state.history.iter().any(|p| !p.dismissed) && !busy {
+        // A quiet welcome centred in the free space; the actions themselves sit by the draft.
         let tokens = crate::theme::Tokens::get(ui.ctx());
-        ui.add_space((ui.available_height() * 0.22).clamp(12.0, 90.0));
+        ui.add_space(((ui.available_height() - 130.0) * 0.5).clamp(8.0, 120.0));
         ui.vertical_centered(|ui| {
             if let Some(texture) = icon_texture(ui.ctx()) {
-                ui.add(egui::Image::new((texture.id(), egui::vec2(64.0, 64.0))).alt_text(tl!("Writing Assistant")));
+                ui.add(egui::Image::new((texture.id(), egui::vec2(52.0, 52.0))).corner_radius(14).alt_text(tl!("Mirai Assistant")));
             }
-            ui.add_space(12.0);
-            ui.label(egui::RichText::new(tl!("Start with your text")).size(23.0).color(tokens.assistant_accent));
-            ui.label(tl!("Choose an action or describe what you would like to change."));
-        });
-        ui.add_space(20.0);
-        ui.add_enabled_ui(may_send(state), |ui| {
-            ui.vertical(|ui| {
-                for (label, instruction) in [
-                    ("Improve writing", "Improve the writing, preserving its meaning and language."),
-                    ("Make concise", "Make this text more concise, preserving its meaning and language."),
-                    ("Correct spelling and grammar", "Correct spelling and grammar only, preserving the language and meaning."),
-                ] {
-                    if ui.add(egui::Button::new(tl!(label)).corner_radius(18).min_size(egui::vec2(0.0, 34.0))).clicked() {
-                        *action = Some(("assistant.suggest", request_params(state, instruction, false)));
-                    }
-                }
-            });
+            ui.add_space(10.0);
+            ui.label(egui::RichText::new(tl!("Start with your text")).size(22.0).color(tokens.assistant_accent));
+            ui.add_space(2.0);
+            ui.label(egui::RichText::new(tl!("Choose an action or describe what you would like to change.")).color(tokens.assistant_muted));
         });
     }
     for proposal in state.history.iter().rev().filter(|p| !p.dismissed) {
@@ -1155,7 +1204,9 @@ mod tests {
         );
         h.run_steps(6);
         assert!(h.query_by_label("You").is_some());
-        assert!(h.query_by_label("Make concise").is_some());
+        // The user's message in the conversation, and the quick action chip above the draft.
+        assert_eq!(h.query_all_by_label("Make concise").count(), 2);
+        assert!(h.query_by_role_and_label(egui::accesskit::Role::Button, "Make concise").is_some());
         assert!(h.query_by_label("Send message").is_some());
         h.get_by_role_and_label(egui::accesskit::Role::ComboBox, "Model").click();
         h.run_steps(3);

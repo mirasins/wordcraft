@@ -3,8 +3,8 @@
 	Waiting for Claude…	Várakozás Claude-ra…
 	Cancelling…	Megszakítás…
 	Request cancelled. Text already sent cannot be retracted.	A kérés megszakítva. Az már elküldött szöveg nem vonható vissza.
-	Writing Assistant	Írássegéd
-	Writing\nAssistant	Írás\nsegéd
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Kapcsolat ellenőrzése
 	Connected with Claude account	Csatlakoztatva Claude-fiókkal
 	Disconnected / authentication required	Leválasztva / hitelesítés szükséges
@@ -39,8 +39,8 @@ assistant	Discard	Elvetés
 assistant	Original	Eredeti
 	Section	Szakasz
 	Request	Kérés
-	Writing Assistant Context	Írássegéd kontextusa
-	Apply Writing Assistant Changes	Írássegéd módosításainak alkalmazása
+	Mirai Assistant Context	Mirai Assistant kontextusa
+	Apply Mirai Assistant Changes	Mirai Assistant módosításainak alkalmazása
 	Claude Code default	Claude Code alapértelmezett
 	You	Ön
 	Conversation	Beszélgetés

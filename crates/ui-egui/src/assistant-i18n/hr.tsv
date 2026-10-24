@@ -3,8 +3,8 @@
 	Waiting for Claude…	Čekanje na Claude…
 	Cancelling…	Otkazivanje…
 	Request cancelled. Text already sent cannot be retracted.	Zahtjev je otkazan. Tekst koji je već poslan ne može se opozvati.
-	Writing Assistant	Pomoćnik za pisanje
-	Writing\nAssistant	Pomoćnik\nza pisanje
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Provjeri vezu
 	Connected with Claude account	Povezano s Claude računom
 	Disconnected / authentication required	Odspojeno / potrebna autentifikacija
@@ -39,8 +39,8 @@ assistant	Discard	Odbaci
 assistant	Original	Izvornik
 	Section	Odjeljak
 	Request	Zahtjev
-	Writing Assistant Context	Kontekst pomoćnika za pisanje
-	Apply Writing Assistant Changes	Primijeni promjene pomoćnika za pisanje
+	Mirai Assistant Context	Kontekst Mirai Assistanta
+	Apply Mirai Assistant Changes	Primijeni promjene Mirai Assistanta
 	Claude Code default	Zadano za Claude Code
 	You	Vi
 	Conversation	Razgovor

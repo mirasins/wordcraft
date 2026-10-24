@@ -3,8 +3,8 @@
 	Waiting for Claude…	Claudeの応答を待機中…
 	Cancelling…	キャンセル中…
 	Request cancelled. Text already sent cannot be retracted.	リクエストをキャンセルしました。送信済みのテキストは取り消せません。
-	Writing Assistant	ライティングアシスタント
-	Writing\nAssistant	ライティング\nアシスタント
+	Mirai Assistant	Mirai Assistant
+	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	接続を確認
 	Connected with Claude account	Claudeアカウントに接続済み
 	Disconnected / authentication required	切断済み / 認証が必要です
@@ -39,8 +39,8 @@ assistant	Discard	破棄
 assistant	Original	元の文
 	Section	セクション
 	Request	リクエスト
-	Writing Assistant Context	ライティングアシスタントのコンテキスト
-	Apply Writing Assistant Changes	ライティングアシスタントの変更を適用
+	Mirai Assistant Context	Mirai Assistantのコンテキスト
+	Apply Mirai Assistant Changes	Mirai Assistantの変更を適用
 	Claude Code default	Claude Codeの既定値
 	You	あなた
 	Conversation	会話
