@@ -25,7 +25,7 @@
 	Summarize	Povzemi
 	Tone	Ton
 	Rewrite tone	Preoblikuj ton
-	Generate	Ustvari
+assistant	Generate	Ustvari
 	Explain / suggest improvements	Razloži / predlagaj izboljšave
 	Claude is processing…	Claude obdeluje…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Pošlje se samo izrecno zahtevano besedilo. Pred uporabo preglejte. Zgodovina ostane v pomnilniku tega okna in se ob izhodu počisti.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	Dokument je bil spremenjen. Pred uporabo tega predloga ga ustvarite znova.
 	Applied	Uporabljeno
 	Apply all	Uporabi vse
-	Discard	Zavrzi
+assistant	Discard	Zavrzi
 	Regenerate	Ustvari znova
 	Undo last application	Razveljavi zadnjo uporabo
-	Original	Izvirnik
+assistant	Original	Izvirnik
 	Section	Oddelek
 	Request	Zahteva
 	Writing Assistant Context	Kontekst pomočnika za pisanje

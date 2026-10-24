@@ -25,7 +25,7 @@
 	Summarize	摘要
 	Tone	語氣
 	Rewrite tone	改寫語氣
-	Generate	產生
+assistant	Generate	產生
 	Explain / suggest improvements	說明 / 建議改進
 	Claude is processing…	Claude 正在處理…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	僅傳送明確要求的文字。套用前請先檢視。紀錄保存在此視窗的記憶體中，結束時清除。
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	文件已變更。套用此建議前請重新產生。
 	Applied	已套用
 	Apply all	全部套用
-	Discard	捨棄
+assistant	Discard	捨棄
 	Regenerate	重新產生
 	Undo last application	復原上次套用
-	Original	原文
+assistant	Original	原文
 	Section	章節
 	Request	要求
 	Writing Assistant Context	寫作助理內容脈絡

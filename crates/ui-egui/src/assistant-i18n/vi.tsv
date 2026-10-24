@@ -25,7 +25,7 @@
 	Summarize	Tóm tắt
 	Tone	Giọng điệu
 	Rewrite tone	Viết lại giọng điệu
-	Generate	Tạo
+assistant	Generate	Tạo
 	Explain / suggest improvements	Giải thích / đề xuất cải thiện
 	Claude is processing…	Claude đang xử lý…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Chỉ văn bản được yêu cầu rõ ràng mới được gửi. Hãy xem lại trước khi áp dụng. Lịch sử được giữ trong bộ nhớ của cửa sổ này và sẽ bị xóa khi thoát.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	Tài liệu đã thay đổi. Hãy tạo lại trước khi áp dụng đề xuất này.
 	Applied	Đã áp dụng
 	Apply all	Áp dụng tất cả
-	Discard	Hủy bỏ
+assistant	Discard	Hủy bỏ
 	Regenerate	Tạo lại
 	Undo last application	Hoàn tác lần áp dụng gần nhất
-	Original	Bản gốc
+assistant	Original	Bản gốc
 	Section	Phần
 	Request	Yêu cầu
 	Writing Assistant Context	Ngữ cảnh Trợ lý viết

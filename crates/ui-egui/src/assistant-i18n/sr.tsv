@@ -25,7 +25,7 @@
 	Summarize	Сажми
 	Tone	Тон
 	Rewrite tone	Препиши тон
-	Generate	Генериши
+assistant	Generate	Генериши
 	Explain / suggest improvements	Објасни / предложи побољшања
 	Claude is processing…	Claude обрађује…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Шаље се само изричито затражен текст. Прегледајте пре примене. Историја остаје у меморији овог прозора и брише се при изласку.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	Документ је измењен. Поново генеришите пре примене овог предлога.
 	Applied	Примењено
 	Apply all	Примени све
-	Discard	Одбаци
+assistant	Discard	Одбаци
 	Regenerate	Генериши поново
 	Undo last application	Поништи последњу примену
-	Original	Оригинал
+assistant	Original	Оригинал
 	Section	Одељак
 	Request	Захтев
 	Writing Assistant Context	Контекст помоћника за писање

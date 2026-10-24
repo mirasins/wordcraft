@@ -25,7 +25,7 @@
 	Summarize	Sammanfatta
 	Tone	Ton
 	Rewrite tone	Skriv om tonen
-	Generate	Generera
+assistant	Generate	Generera
 	Explain / suggest improvements	Förklara / föreslå förbättringar
 	Claude is processing…	Claude bearbetar…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Endast uttryckligen begärd text skickas. Granska innan du tillämpar. Historiken finns kvar i fönstrets minne och rensas vid avslut.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	Dokumentet har ändrats. Generera om innan du tillämpar detta förslag.
 	Applied	Tillämpad
 	Apply all	Tillämpa alla
-	Discard	Kassera
+assistant	Discard	Kassera
 	Regenerate	Generera om
 	Undo last application	Ångra senaste tillämpningen
-	Original	Original
+assistant	Original	Original
 	Section	Avsnitt
 	Request	Begäran
 	Writing Assistant Context	Skrivassistentens kontext

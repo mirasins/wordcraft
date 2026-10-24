@@ -25,7 +25,7 @@
 	Summarize	要約
 	Tone	トーン
 	Rewrite tone	トーンを書き換え
-	Generate	生成
+assistant	Generate	生成
 	Explain / suggest improvements	説明 / 改善案
 	Claude is processing…	Claudeが処理中…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	明示的に要求されたテキストのみが送信されます。適用する前に確認してください。履歴はこのウィンドウのメモリに保持され、終了時に消去されます。
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	ドキュメントが変更されました。この提案を適用する前に再生成してください。
 	Applied	適用済み
 	Apply all	すべて適用
-	Discard	破棄
+assistant	Discard	破棄
 	Regenerate	再生成
 	Undo last application	最後の適用を取り消す
-	Original	元の文
+assistant	Original	元の文
 	Section	セクション
 	Request	リクエスト
 	Writing Assistant Context	ライティングアシスタントのコンテキスト

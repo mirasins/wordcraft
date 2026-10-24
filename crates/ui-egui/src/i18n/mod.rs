@@ -9,6 +9,8 @@
 //! them from `CRAFT_I18N_DIR` (CI and releases check out the SHA in `craft-i18n.rev`); without it
 //! the build is English only. Lookup, fallback (`pt-br` → `pt` → English, app rows over shared
 //! ones), plurals, language names and locale matching are the `craft-i18n` crate's (craft-libs).
+//! This fork preserves its assistant-only translation delta in `src/assistant-i18n/*.tsv`;
+//! `build.rs` merges those rows over the external app catalogs without modifying the checkout.
 //!
 //! The `language` setting is `auto` by default: the UI follows the operating system's language
 //! (Windows display language, macOS preferred languages, `LANG`/`LC_*` elsewhere) when there is a
@@ -37,6 +39,9 @@ use std::cell::Cell;
 use std::sync::{LazyLock, OnceLock};
 
 use craft_i18n::I18n;
+
+#[cfg(test)]
+mod assistant_catalog;
 
 pub use craft_i18n::fmt;
 

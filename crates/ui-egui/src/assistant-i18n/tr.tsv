@@ -25,7 +25,7 @@
 	Summarize	Özetle
 	Tone	Ton
 	Rewrite tone	Tonu yeniden yaz
-	Generate	Oluştur
+assistant	Generate	Oluştur
 	Explain / suggest improvements	Açıkla / iyileştirme öner
 	Claude is processing…	Claude işleniyor…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Yalnızca açıkça istenen metin gönderilir. Uygulamadan önce gözden geçirin. Geçmiş bu pencerenin belleğinde tutulur ve çıkışta temizlenir.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	Belge değişti. Bu öneriyi uygulamadan önce yeniden oluşturun.
 	Applied	Uygulandı
 	Apply all	Tümünü uygula
-	Discard	Vazgeç
+assistant	Discard	Vazgeç
 	Regenerate	Yeniden oluştur
 	Undo last application	Son uygulamayı geri al
-	Original	Özgün
+assistant	Original	Özgün
 	Section	Bölüm
 	Request	İstek
 	Writing Assistant Context	Yazma Asistanı Bağlamı

@@ -509,7 +509,7 @@ fn word_diff(original: &str, suggested: &str) -> Vec<(Part, String)> {
 fn draw_diff(ui: &mut egui::Ui, original: &str, suggested: &str) {
     let tokens = crate::theme::Tokens::get(ui.ctx());
     let parts = word_diff(original, suggested);
-    for (heading, shown) in [(tl!("Original"), Part::Removed), (tl!("Suggested"), Part::Added)] {
+    for (heading, shown) in [(crate::i18n::tc("assistant", "Original"), Part::Removed), (tl!("Suggested"), Part::Added)] {
         ui.label(egui::RichText::new(heading).strong());
         ui.horizontal_wrapped(|ui| {
             ui.spacing_mut().item_spacing.x = 0.0;
@@ -678,7 +678,7 @@ fn request(ui: &mut egui::Ui, state: &mut State, action: &mut Action) {
             }
         });
         ui.horizontal(|ui| {
-            if ui.add_enabled(!state.instruction.trim().is_empty(), egui::Button::new(tl!("Generate"))).clicked() {
+            if ui.add_enabled(!state.instruction.trim().is_empty(), egui::Button::new(crate::i18n::tc("assistant", "Generate"))).clicked() {
                 *action = Some(("assistant.suggest", request_params(state, &state.instruction, false)));
             }
             if ui.button(tl!("Explain / suggest improvements")).clicked() {
@@ -730,7 +730,7 @@ fn history(ui: &mut egui::Ui, state: &State, live: (u64, u64), action: &mut Acti
                 if ui.add_enabled(fresh && pending && !busy, egui::Button::new(tl!("Apply all"))).clicked() {
                     *action = Some(("assistant.accept", json!({"id":proposal.id})));
                 }
-                if ui.button(tl!("Discard")).clicked() {
+                if ui.button(crate::i18n::tc("assistant", "Discard")).clicked() {
                     *action = Some(("assistant.discard", json!({"id":proposal.id})));
                 }
                 if ui.add_enabled(!busy && may_send(state), egui::Button::new(tl!("Regenerate"))).clicked() {

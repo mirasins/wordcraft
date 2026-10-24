@@ -25,7 +25,7 @@
 	Summarize	요약
 	Tone	어조
 	Rewrite tone	어조 다시 쓰기
-	Generate	생성
+assistant	Generate	생성
 	Explain / suggest improvements	설명 / 개선 제안
 	Claude is processing…	Claude가 처리 중입니다…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	명시적으로 요청한 텍스트만 전송됩니다. 적용하기 전에 검토하세요. 기록은 이 창의 메모리에 남아 있으며 종료 시 지워집니다.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	문서가 변경되었습니다. 이 제안을 적용하기 전에 다시 생성하세요.
 	Applied	적용됨
 	Apply all	모두 적용
-	Discard	취소
+assistant	Discard	취소
 	Regenerate	다시 생성
 	Undo last application	마지막 적용 실행 취소
-	Original	원본
+assistant	Original	원본
 	Section	섹션
 	Request	요청
 	Writing Assistant Context	글쓰기 도우미 컨텍스트

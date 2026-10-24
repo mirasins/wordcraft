@@ -25,7 +25,7 @@
 	Summarize	Kokkuvõte
 	Tone	Toon
 	Rewrite tone	Kirjuta toon ümber
-	Generate	Genereeri
+assistant	Generate	Genereeri
 	Explain / suggest improvements	Selgita / paku täiustusi
 	Claude is processing…	Claude töötleb…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Saadetakse ainult selgesõnaliselt päritud tekst. Enne rakendamist vaata üle. Ajalugu jääb selle akna mällu ja tühjendatakse väljumisel.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	Dokumenti on muudetud. Genereeri see ettepanek enne rakendamist uuesti.
 	Applied	Rakendatud
 	Apply all	Rakenda kõik
-	Discard	Loobu
+assistant	Discard	Loobu
 	Regenerate	Genereeri uuesti
 	Undo last application	Võta viimane rakendamine tagasi
-	Original	Algne
+assistant	Original	Algne
 	Section	Jaotis
 	Request	Päring
 	Writing Assistant Context	Kirjutamisabilise kontekst

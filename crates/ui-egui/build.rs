@@ -19,6 +19,9 @@ use std::fmt::Write as _;
 
 use serde_json::Value;
 
+#[path = "src/i18n/assistant_catalog.rs"]
+mod assistant_catalog;
+
 fn main() {
     let dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../contributors");
     let json = read(&dir.join("contributors.json"), "the About window shows no contributors", |t| {
@@ -67,7 +70,20 @@ fn craft_i18n() -> String {
     for (code, shared, app) in entries {
         // `{:?}` escapes the path (Windows backslashes) as a Rust string literal.
         let shared = shared.map_or_else(|| "\"\"".to_string(), |p| format!("include_str!({p:?})"));
-        let _ = writeln!(o, "    ({code:?}, {shared}, include_str!({app:?})),");
+        let overlay = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/assistant-i18n").join(format!("{code}.tsv"));
+        println!("cargo::rerun-if-changed={}", overlay.display());
+        let catalog = if overlay.is_file() {
+            match (std::fs::read_to_string(&app), std::fs::read_to_string(&overlay)) {
+                (Ok(base), Ok(extra)) => format!("{:?}", assistant_catalog::merge(&base, &extra)),
+                _ => {
+                    println!("cargo::error=reading assistant catalog overlay for {code}");
+                    "\"\"".to_string()
+                }
+            }
+        } else {
+            format!("include_str!({app:?})")
+        };
+        let _ = writeln!(o, "    ({code:?}, {shared}, {catalog}),");
     }
     o.push_str("];\n");
     o

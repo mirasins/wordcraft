@@ -25,7 +25,7 @@
 	Summarize	Rezumă
 	Tone	Ton
 	Rewrite tone	Rescrie tonul
-	Generate	Generează
+assistant	Generate	Generează
 	Explain / suggest improvements	Explică / sugerează îmbunătățiri
 	Claude is processing…	Claude procesează…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Sunt trimise doar textele solicitate explicit. Verificați înainte de aplicare. Istoricul rămâne în memoria acestei ferestre și se șterge la ieșire.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	Documentul s-a modificat. Generați din nou înainte de a aplica această propunere.
 	Applied	Aplicat
 	Apply all	Aplică tot
-	Discard	Renunță
+assistant	Discard	Renunță
 	Regenerate	Regenerează
 	Undo last application	Anulează ultima aplicare
-	Original	Original
+assistant	Original	Original
 	Section	Secțiune
 	Request	Solicitare
 	Writing Assistant Context	Contextul asistentului de scriere

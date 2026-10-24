@@ -25,7 +25,7 @@
 	Summarize	Підсумувати
 	Tone	Тон
 	Rewrite tone	Переписати тон
-	Generate	Згенерувати
+assistant	Generate	Згенерувати
 	Explain / suggest improvements	Пояснити / запропонувати покращення
 	Claude is processing…	Claude обробляє…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Надсилається лише текст, який ви явно запросили. Перегляньте перед застосуванням. Історія зберігається в пам'яті цього вікна й очищується під час виходу.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	Документ змінено. Згенеруйте пропозицію знову, перш ніж застосовувати її.
 	Applied	Застосовано
 	Apply all	Застосувати все
-	Discard	Відхилити
+assistant	Discard	Відхилити
 	Regenerate	Згенерувати знову
 	Undo last application	Скасувати останнє застосування
-	Original	Оригінал
+assistant	Original	Оригінал
 	Section	Розділ
 	Request	Запит
 	Writing Assistant Context	Контекст помічника із письма

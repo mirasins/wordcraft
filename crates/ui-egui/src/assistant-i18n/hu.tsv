@@ -25,7 +25,7 @@
 	Summarize	Összefoglalás
 	Tone	Hangnem
 	Rewrite tone	Hangnem átírása
-	Generate	Generálás
+assistant	Generate	Generálás
 	Explain / suggest improvements	Magyarázat / javaslatok
 	Claude is processing…	Claude feldolgozza…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Csak a kifejezetten kért szöveg kerül elküldésre. Alkalmazás előtt tekintse át. Az előzmények ebben az ablakban maradnak a memóriában, kilépéskor törlődnek.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	A dokumentum megváltozott. Az alkalmazás előtt generálja újra ezt a javaslatot.
 	Applied	Alkalmazva
 	Apply all	Összes alkalmazása
-	Discard	Elvetés
+assistant	Discard	Elvetés
 	Regenerate	Újragenerálás
 	Undo last application	Utolsó alkalmazás visszavonása
-	Original	Eredeti
+assistant	Original	Eredeti
 	Section	Szakasz
 	Request	Kérés
 	Writing Assistant Context	Írássegéd kontextusa

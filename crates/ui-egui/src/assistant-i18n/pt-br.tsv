@@ -25,7 +25,7 @@
 	Summarize	Resumir
 	Tone	Tom
 	Rewrite tone	Reescrever tom
-	Generate	Gerar
+assistant	Generate	Gerar
 	Explain / suggest improvements	Explicar / sugerir melhorias
 	Claude is processing…	O Claude está processando…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Somente o texto explicitamente solicitado é enviado. Revise antes de aplicar. O histórico permanece na memória desta janela e é limpo ao sair.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	O documento foi alterado. Gere novamente antes de aplicar esta proposta.
 	Applied	Aplicado
 	Apply all	Aplicar tudo
-	Discard	Descartar
+assistant	Discard	Descartar
 	Regenerate	Gerar novamente
 	Undo last application	Desfazer última aplicação
-	Original	Original
+assistant	Original	Original
 	Section	Seção
 	Request	Solicitação
 	Writing Assistant Context	Contexto do Assistente de Escrita

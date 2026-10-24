@@ -3,6 +3,11 @@
 > **Status:** implemented and checked end to end with a real, signed-in Claude Code account (Claude Code 2.1.310, Windows 11): connection check, a rewrite, word-by-word review, apply, undo and redo, through the desktop app (control channel), the headless MCP path and the client library. Repository gates: `cargo xtask ci` passed on 2026-10-23 (fmt, clippy, 3,981 tests, assets, layers, wasm). See [writing-assistant.md](writing-assistant.md)
 > for the user view. Follow-up review fixes passed `cargo xtask ci` on 2026-10-24 (3,984 tests; 8 ignored). Revision history is at the end.
 
+> **Upstream integration, 2026-10-24:** merged `upstream/main` at `254351c0` (79 commits), preserving
+> the writing assistant. Final `cargo xtask ci`: all 8 gates passed, 4,081 tests passed, 0 failed,
+> 8 ignored, with external catalogs required and embedded. An English-only `cargo check -p
+> wordcraft-ui-egui --locked` also passed. No live requests were made for this integration.
+
 ## Rules this code follows
 
 - Only the official `claude` CLI runs, with the user's account. No API-key path, no HTTP client,
@@ -36,7 +41,8 @@ depend on it; the engine does not, so `assistant.context`/`assistant.apply` neve
 | `crates/ui-egui/src/assistant.rs` | Window, `ui.assistant`, `assistant.*` UI commands, worker thread, history, accept |
 | `crates/ui-egui/src/ribbon.rs`, `canvas.rs`, `keys.rs`, `widgets.rs` | Review ribbon button (`Writing\nAssistant`), context menu item, Ctrl/Cmd+Alt+Shift+A and its shortcut text |
 | `crates/ui-egui/src/lib.rs`, `control.rs` | `WordApp::assistant` state, dispatch, per-frame `poll`, Escape and refocus rules; control-channel command list |
-| `crates/ui-egui/src/i18n/es.tsv` | Spanish strings |
+| `crates/ui-egui/src/assistant-i18n/*.tsv` | Assistant-only translation overlays, preserved from the fork's original catalogs (drafts pending native review) |
+| `crates/ui-egui/build.rs`, `src/i18n/assistant_catalog.rs` | Merge the overlays into the external `craft-i18n` app catalogs at build time |
 | `crates/engine/src/lib.rs`, `cmd/mod.rs` | Module and command registration |
 | `crates/mcp/src/assistant.rs` | Headless `assistant.suggest`: synchronous, local, no window |
 | `crates/mcp/src/tools.rs`, `lib.rs` | `assistant_context`, `assistant_suggest`, `assistant_apply` tools and their dispatch |
@@ -156,8 +162,15 @@ Known limits of the process handling (from a review of `process.rs` and `client.
   subsequence of the middle, capped at 250,000 token pairs (one removed and one added span past
   that).
 - Outside English, the instruction asks for the explanation in the interface language.
-- Strings are `tl!` and the Spanish catalog is `crates/ui-egui/src/i18n/es.tsv`. Command labels in
-  `commands()` are plain English metadata, not translated.
+- Strings are `tl!`. Upstream's interface catalogs now come from `storytold/craft-i18n`, pinned in
+  `craft-i18n.rev` and embedded with `CRAFT_I18N_DIR`. The fork keeps only its 42 added rows per
+  language in `crates/ui-egui/src/assistant-i18n/*.tsv` (26 languages), not copies of the full catalogs.
+  `build.rs` merges these over the corresponding external app catalog by context and source key,
+  preserving unrelated upstream rows and avoiding duplicate keys. Without `CRAFT_I18N_DIR`, the
+  build stays English-only, as upstream intends. No external catalog checkout is modified.
+  The shared labels **Generate**, **Discard** and **Original** use the `assistant` translation
+  context, so preserving their wording here does not change those labels in other dialogs.
+  Command labels in `commands()` are plain English metadata, not translated.
 
 ## Commands and MCP
 
@@ -203,6 +216,11 @@ unchanged target does not cause the whole apply batch to be refused.
 - Gates: `cargo xtask ci` passed on 2026-10-23 (fmt, clippy, 3,981 tests, assets, layers, wasm).
 - Follow-up gates: `cargo xtask ci` passed on Windows on 2026-10-24 after integrating `e6ee258e`:
   fmt, clippy, 3,984 tests passed (8 ignored), assets, layers and wasm. No live requests were run.
+- Upstream merge gates: final `cargo xtask ci` passed on Windows on 2026-10-24 with
+  `CRAFT_I18N_DIR` pointing to `craft-i18n.rev` and `CRAFT_I18N_REQUIRED=1`: fmt, clippy,
+  4,081 tests (8 ignored), i18n-report, doctest, assets, layers and wasm. The tests include the
+  overlay merge regressions, context isolation and embedding of the assistant-specific labels.
+  A separate `cargo check -p wordcraft-ui-egui --locked` without either catalog variable passed.
 - Tests that render through wgpu (`Harness::render`) hold `crate::gpu_test_lock()`. Before it,
   `cargo test -p wordcraft-ui-egui` crashed now and then on Windows (access violation in
   `d3d10warp.dll`, the WARP software rasterizer) when two such tests drew at once; this predates
@@ -220,3 +238,4 @@ unchanged target does not cause the whole apply batch to be refused.
 | 2026-10-23 | major | First version: draft implementation. Not yet compiled in the repository gates, not run against a live account |
 | 2026-10-23 | minor | `assistant` moved to L4; `Provider` trait and `--model`; live validation; process limits documented; `apiProvider` check; word diff; tests and gates updated |
 | 2026-10-24 | minor | Integrated review fixes: successive tracked applications, unchanged MCP suggestions omitted, and regeneration preserves the original instruction and explain-only mode. Windows CI passed all six gates (3,984 tests; 8 ignored); added an unrun offline client workflow for Windows/macOS/Linux and clarified the tracked-deletion regeneration limit |
+| 2026-10-24 | minor | Merged upstream/main `254351c0`: adapted translations to the external-catalog architecture with 26 assistant-only overlays, isolated shared labels with a translation context and added regression tests. Final Windows CI passed all 8 gates (4,081 tests; 8 ignored), and an English-only build check passed; no new live-account checks |

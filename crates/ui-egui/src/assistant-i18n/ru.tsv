@@ -25,7 +25,7 @@
 	Summarize	Кратко изложить
 	Tone	Тон
 	Rewrite tone	Переписать в другом тоне
-	Generate	Создать
+assistant	Generate	Создать
 	Explain / suggest improvements	Объяснить / предложить улучшения
 	Claude is processing…	Claude обрабатывает…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Отправляется только явно запрошенный текст. Проверьте перед применением. История хранится в памяти этого окна и очищается при выходе.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	Документ изменён. Создайте предложение заново перед применением.
 	Applied	Применено
 	Apply all	Применить все
-	Discard	Отменить
+assistant	Discard	Отменить
 	Regenerate	Создать заново
 	Undo last application	Отменить последнее применение
-	Original	Оригинал
+assistant	Original	Оригинал
 	Section	Раздел
 	Request	Запрос
 	Writing Assistant Context	Контекст помощника по написанию

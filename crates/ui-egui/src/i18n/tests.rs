@@ -1121,6 +1121,37 @@ fn a_context_lookup_never_borrows_the_plain_translation() {
     assert_eq!(get("spacing", "Open"), None);
 }
 
+/// The assistant's Generate/Discard/Original rows sit in the `assistant` context: they win there,
+/// and the plain rows that other dialogs use keep their shared wording.
+#[test]
+fn assistant_context_rows_never_replace_the_shared_plain_rows() {
+    let fx = fixture_lang(
+        "x-fixture",
+        "\tGenerate\tShared-Generate-FX\n\tDiscard\tShared-Discard-FX\n\tOriginal\tShared-Original-FX\n\
+         assistant\tGenerate\tAssist-Generate-FX\nassistant\tDiscard\tAssist-Discard-FX\nassistant\tOriginal\tAssist-Original-FX\n",
+    );
+    assert_eq!(trc(fx, "assistant", "Generate"), "Assist-Generate-FX");
+    assert_eq!(trc(fx, "assistant", "Discard"), "Assist-Discard-FX");
+    assert_eq!(trc(fx, "assistant", "Original"), "Assist-Original-FX");
+    assert_eq!(tr(fx, "Generate"), "Shared-Generate-FX");
+    assert_eq!(tr(fx, "Discard"), "Shared-Discard-FX");
+    assert_eq!(tr(fx, "Original"), "Shared-Original-FX");
+}
+
+/// Every embedded catalog has its own `assistant` rows for those three labels.
+#[test]
+fn every_catalog_has_assistant_rows_for_generate_discard_and_original() {
+    needs_catalogs!();
+    for l in Lang::all() {
+        if l.code() == "en" {
+            continue;
+        }
+        for s in ["Generate", "Discard", "Original"] {
+            assert!(l.i18n().get(l.lang, "assistant", s).is_some(), "{} lacks assistant row for {s}", l.code());
+        }
+    }
+}
+
 /// WordCraft offers exactly the languages in `LANGUAGES` when craft-i18n is embedded, and English
 /// alone when it isn't: a missing catalog never fails, it shows English.
 #[test]

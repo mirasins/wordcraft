@@ -25,7 +25,7 @@
 	Summarize	Shrnout
 	Tone	Tón
 	Rewrite tone	Přepsat tón
-	Generate	Generovat
+assistant	Generate	Generovat
 	Explain / suggest improvements	Vysvětlit / navrhnout vylepšení
 	Claude is processing…	Claude zpracovává…
 	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Odesílá se pouze explicitně vyžádaný text. Před použitím zkontrolujte. Historie zůstává v paměti tohoto okna a při ukončení se vymaže.
@@ -33,10 +33,10 @@
 	The document changed. Regenerate before applying this proposal.	Dokument byl změněn. Před použitím tohoto návrhu jej znovu vygenerujte.
 	Applied	Použito
 	Apply all	Použít vše
-	Discard	Zahodit
+assistant	Discard	Zahodit
 	Regenerate	Znovu generovat
 	Undo last application	Vrátit poslední použití
-	Original	Původní
+assistant	Original	Původní
 	Section	Oddíl
 	Request	Požadavek
 	Writing Assistant Context	Kontext asistenta psaní
