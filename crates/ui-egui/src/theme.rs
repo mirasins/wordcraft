@@ -253,6 +253,11 @@ pub struct Tokens {
     pub accent_text: Color32,
     /// Text/icon colour drawn on top of `accent` (e.g. keytip badge letters).
     pub on_accent: Color32,
+    /// Original lavender/lilac palette for the writing conversation, in both themes.
+    pub assistant_background: Color32,
+    pub assistant_bubble: Color32,
+    pub assistant_accent: Color32,
+    pub assistant_border: Color32,
     pub input: Color32,
     pub input_border: Color32,
     pub group_label: Color32,
@@ -322,6 +327,10 @@ impl Tokens {
             nav: APP_COLOR,
             accent_text: APP_INK,
             on_accent: Color32::WHITE,
+            assistant_background: Color32::from_rgb(0xF8, 0xF5, 0xFF),
+            assistant_bubble: Color32::from_rgb(0xED, 0xE4, 0xFA),
+            assistant_accent: Color32::from_rgb(0x70, 0x42, 0xA1),
+            assistant_border: Color32::from_rgb(0xD7, 0xC6, 0xEB),
             input: Color32::WHITE,
             input_border: Color32::from_rgb(0x8A, 0x8A, 0x8A),
             group_label: Color32::from_rgb(0x70, 0x70, 0x70),
@@ -388,6 +397,10 @@ impl Tokens {
             accent_text: Color32::from_rgb(0x9C, 0xB0, 0xF5),
             // Dark text on the light dark-theme accent: white on #7a93f0 is only 2.9:1 (#655).
             on_accent: Color32::from_rgb(0x11, 0x16, 0x2E),
+            assistant_background: Color32::from_rgb(0x25, 0x20, 0x30),
+            assistant_bubble: Color32::from_rgb(0x3B, 0x2D, 0x4E),
+            assistant_accent: Color32::from_rgb(0xD7, 0xB5, 0xF5),
+            assistant_border: Color32::from_rgb(0x65, 0x4C, 0x7D),
             input: Color32::from_rgb(0x1E, 0x1E, 0x1E),
             input_border: Color32::from_rgb(0x7A, 0x7A, 0x7A),
             group_label: Color32::from_rgb(0xA0, 0xA0, 0xA0),

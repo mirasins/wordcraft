@@ -1,4 +1,5 @@
-//! WordCraft's icon set, drawn in code (original artwork; no external icon assets).
+//! WordCraft's original icon set, drawn in code, plus the contributor's embedded assistant
+//! artwork (credited in ATTRIBUTION.md).
 //!
 //! Icons are designed on a 20×20 grid in two colours: line work (`c`) and an accent (`a`).
 
@@ -73,6 +74,12 @@ impl Pen<'_> {
 
 /// Paint icon `name` into `r`. `c` is the line colour; the accent comes from the theme.
 pub fn paint(p: &Painter, r: Rect, name: &str, c: Color32, accent: Color32) {
+    if name == "assistant"
+        && let Some(texture) = crate::assistant::icon_texture(p.ctx())
+    {
+        p.image(texture.id(), r, Rect::from_min_max(pos2(0.0, 0.0), pos2(1.0, 1.0)), Color32::WHITE);
+        return;
+    }
     let pen = Pen { p, r, c, a: accent, w: 1.25 };
     if let Some(kind) = name.strip_prefix("shape.")
         && shape(&pen, kind)

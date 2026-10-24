@@ -2,7 +2,8 @@
 
 > **Status:** implemented and checked end to end with a real, signed-in Claude Code account (Claude Code 2.1.310, Windows 11): connection check, a rewrite, word-by-word review, apply, undo and redo, through the desktop app (control channel), the headless MCP path and the client library. Repository gates: `cargo xtask ci` passed on 2026-10-23 (fmt, clippy, 3,981 tests, assets, layers, wasm). Still open: a screen-reader
 > pass, and runs on macOS and Linux. Gap 25 in [gaps.md](gaps.md) tracks this. Revision history is
-> at the end.
+> at the end. **Landed (2026-10-24):** the window layout and model choice described below are
+> in place. `cargo xtask ci` passed (8 gates); headless light and dark screenshots reviewed; no live-account check.
 
 The writing assistant drafts, rewrites, translates and summarises text inside WordCraft. It uses
 the **official Claude Code CLI** (`claude`) and your own account. WordCraft has no API keys, no
@@ -35,17 +36,37 @@ The desktop app is required; the web build reports the assistant as unavailable.
 Opening the window sends nothing and starts no process. **Escape** closes it (and cancels a
 running request). It opens beside the page, on the right, so the text under review stays visible.
 
+## The window
+
+- **Conversation:** your requests and Claude's proposals appear in order, from top to bottom. A
+  proposal shows its suggestions for review. This is a log of what you asked and what came back;
+  it is not a chat.
+- **Composer:** a fixed box at the bottom of the window, five lines tall, holds the instruction
+  and the Send button. It stays in place while the conversation scrolls.
+- **Welcome:** an empty window shows a centred WordCraft welcome with quick-action chips. Clicking
+  a chip requests that action on the selected scope; the same consent checks apply.
+- **Colours:** a lavender and lilac palette in both the light and the dark theme.
+- **Writing options:** scope, a custom model field and the whole-document context switch are folded
+  away so the conversation has room. The model drop-down stays inside the composer. The consent checkbox for whole-body
+  requests stays next to the composer and is never folded away.
+
+**Each request is independent.** WordCraft does not send earlier requests, proposals or the
+conversation as context, and the window is not a multi-turn chat. Each request carries only its
+own instruction and the text its scope selects. Consent, the consent checkbox and Apply/Undo
+rules below apply to every request separately.
+
 ## Choosing the model
 
-Leave **Model** empty to use Claude Code's default model. To pick one, type a Claude alias such as
-`sonnet`, `opus` or `haiku`, or a full model id. The name goes to Claude Code as `--model`, so a
-new Claude model works as soon as your Claude Code knows it, without a WordCraft update. To start
-with the same model every time, set the `WORDCRAFT_ASSISTANT_MODEL` environment variable. Names
-are checked first: at most 64 characters of letters, digits and `. _ - [ ]`.
+The **Model** box is a drop-down with **Default** (Claude Code's default model), **Sonnet**,
+**Opus** and **Haiku**. Each name is sent as its alias to Claude Code as `--model`. In **Writing options**
+you can type another alias or a full model id in the free-text field instead. A new Claude model
+works as soon as your Claude Code knows it, without a WordCraft update. To start with the same
+model every time, set the `WORDCRAFT_ASSISTANT_MODEL` environment variable. Names are checked
+first: at most 64 characters of letters, digits and `. _ - [ ]`.
 
 ## What it sends
 
-Only the text you choose is sent, and only when you press a button or Generate.
+Only the text you choose is sent, and only when you press Send message or a writing-action button.
 
 | Scope | What is sent |
 |---|---|
@@ -68,8 +89,8 @@ rather than sent without them. Refusals and errors appear in the window.
 
 ## Reviewing and applying
 
-When a proposal arrives, the **Request** controls fold away so the proposal fills the window;
-expand **Request** to ask again. Each suggestion appears with its original and suggested text,
+When a proposal arrives, it appears in the conversation above the composer. To ask again, type
+in the composer below; the options stay folded under **Options** unless you open them. Each suggestion appears with its original and suggested text,
 changed words marked: struck through in the original, underlined in the suggestion. The
 explanation is written in the interface language. Then:
 
@@ -105,7 +126,8 @@ connection check after 30. Text already sent to Claude cannot be retracted by ca
   most 8 proposals and 1 MiB, cleared when you close WordCraft.
 - Claude Code keeps its own records under its own rules; WordCraft turns off its session saving
   for these requests.
-- The model is whatever your Claude Code uses; WordCraft does not pick one.
+- The model is whatever your Claude Code uses unless you choose one under **Options** or set
+  `WORDCRAFT_ASSISTANT_MODEL`.
 - Only a Claude account sign-in (stored session, or the `CLAUDE_CODE_OAUTH_TOKEN` made by
   `claude setup-token`) is accepted. If your Claude Code is set up for an API key, a key helper,
   Amazon Bedrock, Google Vertex, Microsoft Foundry or a gateway, the assistant refuses to run.
@@ -128,3 +150,4 @@ reader on any platform.
 | 2026-10-23 | major | First version: draft implementation. Not yet compiled in the repository gates, not run against a live account |
 | 2026-10-23 | minor | Validated with a live account (desktop app, MCP, library); model choice (`--model`); word-by-word diff; explanation in the interface language; Escape closes the window; request controls fold when a proposal arrives; Bedrock/Vertex/Foundry/gateway setups refused |
 | 2026-10-24 | minor | Review fixes allow successive tracked applications; clarified that regeneration over tracked deletions requires accepting or rejecting those revisions first. No new live-account validation |
+| 2026-10-24 | minor | Landed: chronological conversation with request and proposal entries; composer at the bottom (up to five lines, scroll capped at 160px); lavender/lilac palette in light and dark themes; centred welcome with quick chips; original bird icon (@mirasins, MIT OR Apache-2.0, in ATTRIBUTION) on the Review button, header and shortcut, not the app icon; Model drop-down (Default, Sonnet, Opus, Haiku) with a free-text alias or id under Writing options; authentication and options folded. Each request stays independent (no chat history sent, not multi-turn). `cargo xtask ci` passed (8 gates), release x64 static build produced, headless light and dark screenshots reviewed, synthetic capture-proposal test passed |

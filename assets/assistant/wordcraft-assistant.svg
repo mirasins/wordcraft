@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <title>Wordcraft — asistente de escritura</title>
+  <desc>Cuervo de tinta con plumilla, en estilo de grabado sobre fondo terracota. Ilustración vectorial original.</desc>
+  <defs>
+    <linearGradient id="bg" x1="70" y1="30" x2="450" y2="490" gradientUnits="userSpaceOnUse"><stop stop-color="#E49B78"/><stop offset="1" stop-color="#C66F53"/></linearGradient>
+    <linearGradient id="paper" x1="150" y1="120" x2="360" y2="430" gradientUnits="userSpaceOnUse"><stop stop-color="#FFF5DC"/><stop offset="1" stop-color="#E5CEAA"/></linearGradient>
+    <pattern id="engrave" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(28)"><path d="M0 0V9" stroke="#272722" stroke-width="1.1" opacity=".3"/></pattern>
+    <clipPath id="bird"><path d="M82 428C108 392 108 355 119 310C129 266 156 238 191 219C203 199 202 173 211 148C219 118 247 93 280 91L269 76L301 87L307 72L318 91C343 96 361 113 369 133L427 155L380 166L352 163C348 191 328 209 310 228C323 279 300 348 257 381L196 412L121 447L148 411Z"/></clipPath>
+  </defs>
+  <rect x="16" y="16" width="480" height="480" rx="106" fill="url(#bg)"/>
+  <rect x="25" y="25" width="462" height="462" rx="98" stroke="#F8D8BB" stroke-opacity=".26" stroke-width="2"/>
+  <!-- Raven silhouette -->
+  <path d="M82 428C108 392 108 355 119 310C129 266 156 238 191 219C203 199 202 173 211 148C219 118 247 93 280 91L269 76L301 87L307 72L318 91C343 96 361 113 369 133L427 155L380 166L352 163C348 191 328 209 310 228C323 279 300 348 257 381L196 412L121 447L148 411Z" fill="url(#paper)" stroke="#262823" stroke-width="8" stroke-linejoin="round"/>
+  <g clip-path="url(#bird)">
+    <path d="M92 285L191 219L215 222L188 279L144 386L114 429L82 428Z" fill="#292D29"/>
+    <path d="M207 233C176 258 155 310 142 375C186 345 235 301 260 253C245 232 228 227 207 233Z" fill="#333833"/>
+    <path d="M214 244C192 269 174 304 161 348C201 320 231 286 250 254" stroke="#F4E6C9" stroke-width="4" stroke-linecap="round"/>
+    <path d="M205 266L184 304L227 272M193 294L174 327L214 296M177 325L163 351L197 328M227 245L217 269" stroke="#E6D5B4" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M261 239C272 270 235 333 198 368C181 385 152 406 124 424M272 250C282 291 245 349 207 377C190 391 174 400 154 410M285 257C296 299 272 339 242 363" stroke="#33362D" stroke-width="3" stroke-linecap="round"/>
+    <path d="M256 269L239 277M247 289L227 297M233 312L214 318M214 336L195 342M193 357L178 363M272 287L257 297M261 315L245 324M241 342L228 351" stroke="#33362D" stroke-width="2"/>
+    <path d="M225 130C204 158 219 186 202 217C228 213 244 201 247 187C258 217 281 230 311 229L338 200C307 216 281 191 274 177C248 175 234 161 240 144Z" fill="#30352F"/>
+    <path d="M219 184L228 170M216 202L237 184M232 207L247 193M256 194L263 211M267 202L276 220M280 210L292 225M294 214L308 225" stroke="#EEE0C1" stroke-width="2" stroke-linecap="round"/>
+    <path d="M233 122C249 104 271 99 291 102M242 133C254 117 269 113 281 113M238 144L254 128M244 153L257 140M253 162L263 151M265 169L272 159M278 176L285 166M292 183L300 173M309 190L316 180M325 186L335 177" stroke="#30352F" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M320 106L331 118M335 114L345 130M346 125L352 138" stroke="#30352F" stroke-width="2.5"/>
+    <path d="M347 142L418 155L379 166L350 157Z" fill="#30352F"/>
+    <path d="M359 151L404 156" stroke="#EAD9B8" stroke-width="2"/>
+    <path d="M127 396L116 438M142 389L128 434M157 384L142 426M170 383L160 416" stroke="#31362E" stroke-width="3"/>
+    <path d="M285 253C298 281 286 319 269 341L288 330L306 289Z" fill="url(#engrave)"/>
+  </g>
+  <!-- Alert, friendly eye -->
+  <path d="M291 137C301 124 319 125 330 138C318 149 302 150 291 137Z" fill="#292E28"/>
+  <circle cx="311" cy="137" r="6" fill="#FFF4DA"/>
+  <circle cx="313" cy="136" r="2.5" fill="#272C27"/>
+  <path d="M290 123C302 116 316 117 327 124" stroke="#30352F" stroke-width="4" stroke-linecap="round"/>
+  <!-- Writing nib: the assistant's tool -->
+  <g transform="rotate(24 366 321)">
+    <path d="M349 205H383V273H349Z" fill="#30352F" stroke="#242822" stroke-width="6"/>
+    <path d="M355 211H364V267H355Z" fill="#F2DFC0"/>
+    <path d="M345 271H387L403 344L366 404L329 344Z" fill="url(#paper)" stroke="#252A24" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M345 283L339 339L357 373M384 283L393 339L375 373" stroke="#68674F" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M366 323V395" stroke="#292E27" stroke-width="5"/>
+    <circle cx="366" cy="320" r="10" fill="#292E27"/>
+    <path d="M346 274H386" stroke="#FFF3D7" stroke-width="4"/>
+  </g>
+  <!-- Small ink flourish -->
+  <path d="M292 439C331 426 382 445 407 425" stroke="#2D322B" stroke-width="6" stroke-linecap="round"/>
+  <path d="M416 407L420 396L425 407L436 411L425 416L421 427L417 416L406 412Z" fill="#FFF0D2"/>
+</svg>
