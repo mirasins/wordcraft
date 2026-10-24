@@ -77,6 +77,9 @@ explanation is written in the interface language. Then:
 - After an application, the window takes the document's new state, so the remaining suggestions
   can be applied one after another, also with **Track Changes** on. If the document is changed
   by something else, the remaining suggestions are stale: **Regenerate** asks again.
+- To regenerate over text with tracked deletions, first accept or reject those revisions. The
+  assistant refuses to send hidden deleted text; the remaining suggestions of the existing proposal
+  can still be applied.
 - **Copy** copies the suggested text to the clipboard without changing the document.
 - **Discard** removes the proposal from the window.
 - **Undo last application** undoes the last application in one step, while the document has not
@@ -124,3 +127,4 @@ reader on any platform.
 |---|---|---|
 | 2026-10-23 | major | First version: draft implementation. Not yet compiled in the repository gates, not run against a live account |
 | 2026-10-23 | minor | Validated with a live account (desktop app, MCP, library); model choice (`--model`); word-by-word diff; explanation in the interface language; Escape closes the window; request controls fold when a proposal arrives; Bedrock/Vertex/Foundry/gateway setups refused |
+| 2026-10-24 | minor | Review fixes allow successive tracked applications; clarified that regeneration over tracked deletions requires accepting or rejecting those revisions first. No new live-account validation |

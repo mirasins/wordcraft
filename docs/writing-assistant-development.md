@@ -1,7 +1,7 @@
 # Writing assistant: developer notes
 
 > **Status:** implemented and checked end to end with a real, signed-in Claude Code account (Claude Code 2.1.310, Windows 11): connection check, a rewrite, word-by-word review, apply, undo and redo, through the desktop app (control channel), the headless MCP path and the client library. Repository gates: `cargo xtask ci` passed on 2026-10-23 (fmt, clippy, 3,981 tests, assets, layers, wasm). See [writing-assistant.md](writing-assistant.md)
-> for the user view. Revision history is at the end.
+> for the user view. Follow-up review fixes passed `cargo xtask ci` on 2026-10-24 (3,984 tests; 8 ignored). Revision history is at the end.
 
 ## Rules this code follows
 
@@ -107,13 +107,18 @@ document). No whole body is ever sent implicitly.
 - `document_id` and `revision` must match the session, else the caller must read the context again.
 - Each change: index in range, used once, one paragraph (no line breaks or objects), and the
   current text of the target must equal its `original`.
+- There can be only one target per paragraph. Targets already marked `applied` cannot be changed
+  again; their original text is not rechecked because tracked deletions remain in the paragraph.
 - Each change is reduced to its differing middle (common prefix and suffix are kept).
 - Changes apply last-paragraph-first, as one undoable step through `Session::run`.
 
 On success it returns an updated context: the new `revision` and new target `original` texts and
 `end` offsets, so the UI can apply the pending targets of a proposal one after another. With
-Track Changes on, no updated context is returned, so the remaining suggestions are stale and the
-UI asks for a regenerate.
+Track Changes on, the changed targets are marked `applied` instead of having their text and offsets
+updated, because their paragraphs retain tracked deletions. Those targets cannot be applied again;
+the remaining targets can still be applied with the refreshed context.
+Reading a new context for a paragraph with tracked deletions is still refused to avoid sending
+hidden text. Accept or reject those revisions before regenerating over that paragraph.
 
 Known limits of the process handling (from a review of `process.rs` and `client.rs`):
 
@@ -139,6 +144,8 @@ Known limits of the process handling (from a review of `process.rs` and `client.
   Errors from start, poll and apply are shown in the window.
 - History: `VecDeque` of proposals, newest first, trimmed to 8 entries and 1 MiB of estimated size.
   Nothing is persisted.
+- Regenerate keeps the user's original instruction and explicit explain-only mode; the explanation
+  prefix and interface-language instruction are added afresh, not accumulated on each retry.
 - A proposal records the context it was made from. Apply and Undo check its `document_id` and
   `revision` against the session; a stale proposal shows a regenerate message and no Apply.
 - `ui.assistant {value?}` toggles or sets the window. Opening it does not authenticate or send.
@@ -170,6 +177,8 @@ MCP: the headless server answers `assistant.suggest` synchronously through
 `assistant::generate_locally` and returns `{context, suggestions, explanation}` without changing
 the document. The connected (`--connect`) backend starts a job in the app and the caller polls
 `assistant.status`. `assistant_apply` takes the context and `changes` from either.
+Unchanged suggestions are removed before the headless response is returned, as in the UI, so an
+unchanged target does not cause the whole apply batch to be refused.
 
 ## Tests and gates
 
@@ -192,11 +201,16 @@ the document. The connected (`--connect`) backend starts a job in the app and th
 - Headless window screenshot: `WORDCRAFT_ASSISTANT_SCREENSHOT=<png> cargo test -p
   wordcraft-ui-egui --lib assistant_review_screenshot -- --ignored`.
 - Gates: `cargo xtask ci` passed on 2026-10-23 (fmt, clippy, 3,981 tests, assets, layers, wasm).
+- Follow-up gates: `cargo xtask ci` passed on Windows on 2026-10-24 after integrating `e6ee258e`:
+  fmt, clippy, 3,984 tests passed (8 ignored), assets, layers and wasm. No live requests were run.
 - Tests that render through wgpu (`Harness::render`) hold `crate::gpu_test_lock()`. Before it,
   `cargo test -p wordcraft-ui-egui` crashed now and then on Windows (access violation in
   `d3d10warp.dll`, the WARP software rasterizer) when two such tests drew at once; this predates
   the assistant (seen at `3a4770ef`) and six parallel runs passed after the lock.
 - The wasm gate needs `rustup target add wasm32-unknown-unknown`.
+- `.github/workflows/assistant.yml` adds offline client tests on Windows, macOS and Linux for
+  assistant-related pull requests and manual dispatch. It never runs ignored live tests or installs
+  Claude Code. The workflow has not yet been run; it does not replace desktop or screen-reader checks.
 - Not done: a screen-reader pass on each desktop platform, and runs on macOS and Linux.
 
 ## Revision history
@@ -205,3 +219,4 @@ the document. The connected (`--connect`) backend starts a job in the app and th
 |---|---|---|
 | 2026-10-23 | major | First version: draft implementation. Not yet compiled in the repository gates, not run against a live account |
 | 2026-10-23 | minor | `assistant` moved to L4; `Provider` trait and `--model`; live validation; process limits documented; `apiProvider` check; word diff; tests and gates updated |
+| 2026-10-24 | minor | Integrated review fixes: successive tracked applications, unchanged MCP suggestions omitted, and regeneration preserves the original instruction and explain-only mode. Windows CI passed all six gates (3,984 tests; 8 ignored); added an unrun offline client workflow for Windows/macOS/Linux and clarified the tracked-deletion regeneration limit |

@@ -1,0 +1,47 @@
+# Offline unit tests of the writing assistant crate (`wordcraft-assistant`) on every pull request
+# that touches it, on Linux, Windows and macOS. Live tests are `#[ignore]`d and never run here:
+# no secrets, no Claude Code install, no network calls to a model provider.
+name: Assistant
+
+on:
+  pull_request:
+    paths:
+      - "crates/assistant/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/assistant.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: assistant-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  offline-tests:
+    name: wordcraft-assistant offline tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest, macos-latest]
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install Rust (stable, minimal profile)
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup default stable
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Offline assistant tests
+        run: cargo test -p wordcraft-assistant --lib --locked
