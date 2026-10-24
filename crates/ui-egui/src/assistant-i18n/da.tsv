@@ -1,0 +1,44 @@
+# AI draft pending native review
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Venter på Claude…
+	Cancelling…	Annullerer…
+	Request cancelled. Text already sent cannot be retracted.	Anmodningen blev annulleret. Tekst, der allerede er sendt, kan ikke trækkes tilbage.
+	Writing Assistant	Skriveassistent
+	Writing\nAssistant	Skrive\nassistent
+	Check connection	Kontrollér forbindelse
+	Connected with Claude account	Forbundet med Claude-konto
+	Disconnected / authentication required	Afbrudt / godkendelse påkrævet
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Bruger officiel Claude Code med din konto/OAuth. Ingen API-nøgler eller alternative udbydere.
+	Sign in or change account	Log ind eller skift konto
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Installer Claude Code, og kør derefter `claude auth login` i din terminal. For at skifte konto skal du bruge den officielle log ud/log ind-procedure og kontrollere forbindelsen igen.
+	Official authentication instructions	Officielle godkendelsesinstruktioner
+	Scope	Omfang
+	Automatic: selected text, or the current paragraph when nothing is selected.	Automatisk: markeret tekst, eller det aktuelle afsnit når intet er markeret.
+	Include the whole document as context	Medtag hele dokumentet som kontekst
+	I approve sending the whole document for this request	Jeg godkender, at hele dokumentet sendes til denne anmodning
+	What would you like to do with this text?	Hvad vil du gøre med denne tekst?
+	Improve writing	Forbedr skrivning
+	Make concise	Gør kortere
+	More formal	Mere formel
+	More informal	Mere uformel
+	Correct spelling and grammar	Ret stavning og grammatik
+	Summarize	Opsummer
+	Tone	Tone
+	Rewrite tone	Omskriv tone
+	Generate	Generer
+	Explain / suggest improvements	Forklar / foreslå forbedringer
+	Claude is processing…	Claude behandler…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Kun eksplicit anmodet tekst sendes. Gennemgå før anvendelse. Historikken forbliver i dette vindues hukommelse og ryddes ved afslutning.
+	Proposal	Forslag
+	The document changed. Regenerate before applying this proposal.	Dokumentet er ændret. Generer igen, før dette forslag anvendes.
+	Applied	Anvendt
+	Apply all	Anvend alle
+	Discard	Kassér
+	Regenerate	Generer igen
+	Undo last application	Fortryd sidste anvendelse
+	Original	Original
+	Section	Afsnit
+	Request	Anmodning
+	Writing Assistant Context	Kontekst for skriveassistent
+	Apply Writing Assistant Changes	Anvend ændringer fra skriveassistent
+	Claude Code default	Claude Code-standard

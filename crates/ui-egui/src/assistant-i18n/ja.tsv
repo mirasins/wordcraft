@@ -1,0 +1,44 @@
+# AI draft pending native review
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Claudeの応答を待機中…
+	Cancelling…	キャンセル中…
+	Request cancelled. Text already sent cannot be retracted.	リクエストをキャンセルしました。送信済みのテキストは取り消せません。
+	Writing Assistant	ライティングアシスタント
+	Writing\nAssistant	ライティング\nアシスタント
+	Check connection	接続を確認
+	Connected with Claude account	Claudeアカウントに接続済み
+	Disconnected / authentication required	切断済み / 認証が必要です
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	アカウントやOAuthを使用して公式のClaude Codeを利用します。APIキーやフォールバックプロバイダーは使用しません。
+	Sign in or change account	サインインまたはアカウントを変更
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Claude Codeをインストールし、ターミナルで `claude auth login` を実行してください。アカウントを変更するには、公式のログアウト/ログインの手順を使用し、接続を再度確認してください。
+	Official authentication instructions	公式認証の手順
+	Scope	範囲
+	Automatic: selected text, or the current paragraph when nothing is selected.	自動: 選択したテキスト、または何も選択されていない場合は現在の段落。
+	Include the whole document as context	ドキュメント全体をコンテキストとして含める
+	I approve sending the whole document for this request	このリクエストでドキュメント全体を送信することを承認します
+	What would you like to do with this text?	このテキストをどうしますか？
+	Improve writing	文章を改善
+	Make concise	簡潔にする
+	More formal	よりフォーマルに
+	More informal	よりカジュアルに
+	Correct spelling and grammar	スペルと文法を修正
+	Summarize	要約
+	Tone	トーン
+	Rewrite tone	トーンを書き換え
+	Generate	生成
+	Explain / suggest improvements	説明 / 改善案
+	Claude is processing…	Claudeが処理中…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	明示的に要求されたテキストのみが送信されます。適用する前に確認してください。履歴はこのウィンドウのメモリに保持され、終了時に消去されます。
+	Proposal	提案
+	The document changed. Regenerate before applying this proposal.	ドキュメントが変更されました。この提案を適用する前に再生成してください。
+	Applied	適用済み
+	Apply all	すべて適用
+	Discard	破棄
+	Regenerate	再生成
+	Undo last application	最後の適用を取り消す
+	Original	元の文
+	Section	セクション
+	Request	リクエスト
+	Writing Assistant Context	ライティングアシスタントのコンテキスト
+	Apply Writing Assistant Changes	ライティングアシスタントの変更を適用
+	Claude Code default	Claude Codeの既定値

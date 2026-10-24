@@ -1,0 +1,44 @@
+# AI draft pending native review
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Várakozás Claude-ra…
+	Cancelling…	Megszakítás…
+	Request cancelled. Text already sent cannot be retracted.	A kérés megszakítva. Az már elküldött szöveg nem vonható vissza.
+	Writing Assistant	Írássegéd
+	Writing\nAssistant	Írás\nsegéd
+	Check connection	Kapcsolat ellenőrzése
+	Connected with Claude account	Csatlakoztatva Claude-fiókkal
+	Disconnected / authentication required	Leválasztva / hitelesítés szükséges
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	A hivatalos Claude Code-ot használja a fiókjával/OAuth-val. Nincs API-kulcs vagy tartalék szolgáltató.
+	Sign in or change account	Bejelentkezés vagy fiókváltás
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Telepítse a Claude Code-ot, majd futtassa a `claude auth login` parancsot a terminálban. A fiók módosításához használja a hivatalos kijelentkezési/bejelentkezési folyamatot, majd ellenőrizze újra a kapcsolatot.
+	Official authentication instructions	Hivatalos hitelesítési útmutató
+	Scope	Hatókör
+	Automatic: selected text, or the current paragraph when nothing is selected.	Automatikus: a kijelölt szöveg, vagy kijelölés hiányában az aktuális bekezdés.
+	Include the whole document as context	A teljes dokumentum elküldése környezetként
+	I approve sending the whole document for this request	Jóváhagyom, hogy a teljes dokumentumot elküldjék ehhez a kéréshez
+	What would you like to do with this text?	Mit szeretne tenni ezzel a szöveggel?
+	Improve writing	Írás javítása
+	Make concise	Tömörítés
+	More formal	Formálisabbá tétel
+	More informal	Közvetlenebbé tétel
+	Correct spelling and grammar	Helyesírás és nyelvtan javítása
+	Summarize	Összefoglalás
+	Tone	Hangnem
+	Rewrite tone	Hangnem átírása
+	Generate	Generálás
+	Explain / suggest improvements	Magyarázat / javaslatok
+	Claude is processing…	Claude feldolgozza…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Csak a kifejezetten kért szöveg kerül elküldésre. Alkalmazás előtt tekintse át. Az előzmények ebben az ablakban maradnak a memóriában, kilépéskor törlődnek.
+	Proposal	Javaslat
+	The document changed. Regenerate before applying this proposal.	A dokumentum megváltozott. Az alkalmazás előtt generálja újra ezt a javaslatot.
+	Applied	Alkalmazva
+	Apply all	Összes alkalmazása
+	Discard	Elvetés
+	Regenerate	Újragenerálás
+	Undo last application	Utolsó alkalmazás visszavonása
+	Original	Eredeti
+	Section	Szakasz
+	Request	Kérés
+	Writing Assistant Context	Írássegéd kontextusa
+	Apply Writing Assistant Changes	Írássegéd módosításainak alkalmazása
+	Claude Code default	Claude Code alapértelmezett

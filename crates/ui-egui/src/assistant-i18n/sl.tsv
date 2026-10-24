@@ -1,0 +1,44 @@
+# AI draft pending native review
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Čakanje na Claude…
+	Cancelling…	Preklicevanje…
+	Request cancelled. Text already sent cannot be retracted.	Zahteva je preklicana. Že poslanega besedila ni mogoče umakniti.
+	Writing Assistant	Pomočnik za pisanje
+	Writing\nAssistant	Pomočnik\nza pisanje
+	Check connection	Preveri povezavo
+	Connected with Claude account	Povezano z računom Claude
+	Disconnected / authentication required	Povezava prekinjena / potrebna je overitev
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Uporablja uradni Claude Code z vašim računom/OAuth. Brez ključev API in nadomestnih ponudnikov.
+	Sign in or change account	Prijava ali sprememba računa
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Namestite Claude Code, nato v terminalu zaženite `claude auth login`. Za spremembo računa uporabite uradni postopek odjave/prijave in ponovno preverite povezavo.
+	Official authentication instructions	Uradna navodila za overitev
+	Scope	Obseg
+	Automatic: selected text, or the current paragraph when nothing is selected.	Samodejno: izbrano besedilo ali trenutni odstavek, če ni nič izbrano.
+	Include the whole document as context	Vključi celoten dokument kot kontekst
+	I approve sending the whole document for this request	Odobravam pošiljanje celotnega dokumenta za to zahtevo
+	What would you like to do with this text?	Kaj želite storiti s tem besedilom?
+	Improve writing	Izboljšaj slog pisanja
+	Make concise	Skrajšaj
+	More formal	Bolj formalno
+	More informal	Bolj neformalno
+	Correct spelling and grammar	Popravi pravopis in slovnico
+	Summarize	Povzemi
+	Tone	Ton
+	Rewrite tone	Preoblikuj ton
+	Generate	Ustvari
+	Explain / suggest improvements	Razloži / predlagaj izboljšave
+	Claude is processing…	Claude obdeluje…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Pošlje se samo izrecno zahtevano besedilo. Pred uporabo preglejte. Zgodovina ostane v pomnilniku tega okna in se ob izhodu počisti.
+	Proposal	Predlog
+	The document changed. Regenerate before applying this proposal.	Dokument je bil spremenjen. Pred uporabo tega predloga ga ustvarite znova.
+	Applied	Uporabljeno
+	Apply all	Uporabi vse
+	Discard	Zavrzi
+	Regenerate	Ustvari znova
+	Undo last application	Razveljavi zadnjo uporabo
+	Original	Izvirnik
+	Section	Oddelek
+	Request	Zahteva
+	Writing Assistant Context	Kontekst pomočnika za pisanje
+	Apply Writing Assistant Changes	Uporabi spremembe pomočnika za pisanje
+	Claude Code default	Privzeto za Claude Code

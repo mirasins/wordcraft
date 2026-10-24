@@ -1,0 +1,44 @@
+# AI draft pending native review
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Se așteaptă Claude…
+	Cancelling…	Se anulează…
+	Request cancelled. Text already sent cannot be retracted.	Solicitarea a fost anulată. Textul deja trimis nu poate fi retras.
+	Writing Assistant	Asistent de scriere
+	Writing\nAssistant	Asistent\nde scriere
+	Check connection	Verifică conexiunea
+	Connected with Claude account	Conectat cu contul Claude
+	Disconnected / authentication required	Deconectat / autentificare necesară
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Utilizează Claude Code oficial, cu contul și OAuth-ul dvs. Fără chei API sau furnizori alternativi.
+	Sign in or change account	Conectați-vă sau schimbați contul
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Instalați Claude Code, apoi rulați `claude auth login` în terminal. Pentru a schimba contul, utilizați fluxul oficial de deconectare/conectare și verificați din nou conexiunea.
+	Official authentication instructions	Instrucțiuni oficiale de autentificare
+	Scope	Domeniu
+	Automatic: selected text, or the current paragraph when nothing is selected.	Automat: textul selectat sau paragraful curent, dacă nu este selectat nimic.
+	Include the whole document as context	Include întregul document ca context
+	I approve sending the whole document for this request	Aprob trimiterea întregului document pentru această solicitare
+	What would you like to do with this text?	Ce doriți să faceți cu acest text?
+	Improve writing	Îmbunătățește redactarea
+	Make concise	Fă mai concis
+	More formal	Mai formal
+	More informal	Mai informal
+	Correct spelling and grammar	Corectează ortografia și gramatica
+	Summarize	Rezumă
+	Tone	Ton
+	Rewrite tone	Rescrie tonul
+	Generate	Generează
+	Explain / suggest improvements	Explică / sugerează îmbunătățiri
+	Claude is processing…	Claude procesează…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Sunt trimise doar textele solicitate explicit. Verificați înainte de aplicare. Istoricul rămâne în memoria acestei ferestre și se șterge la ieșire.
+	Proposal	Propunere
+	The document changed. Regenerate before applying this proposal.	Documentul s-a modificat. Generați din nou înainte de a aplica această propunere.
+	Applied	Aplicat
+	Apply all	Aplică tot
+	Discard	Renunță
+	Regenerate	Regenerează
+	Undo last application	Anulează ultima aplicare
+	Original	Original
+	Section	Secțiune
+	Request	Solicitare
+	Writing Assistant Context	Contextul asistentului de scriere
+	Apply Writing Assistant Changes	Aplică modificările asistentului de scriere
+	Claude Code default	Implicit Claude Code

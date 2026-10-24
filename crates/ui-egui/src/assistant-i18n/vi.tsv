@@ -1,0 +1,44 @@
+# AI draft pending native review
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Đang chờ Claude…
+	Cancelling…	Đang hủy…
+	Request cancelled. Text already sent cannot be retracted.	Đã hủy yêu cầu. Văn bản đã gửi không thể thu hồi.
+	Writing Assistant	Trợ lý viết
+	Writing\nAssistant	Trợ lý\nviết
+	Check connection	Kiểm tra kết nối
+	Connected with Claude account	Đã kết nối với tài khoản Claude
+	Disconnected / authentication required	Đã ngắt kết nối / cần xác thực
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Sử dụng Claude Code chính thức với tài khoản/OAuth của bạn. Không dùng khóa API hay nhà cung cấp dự phòng.
+	Sign in or change account	Đăng nhập hoặc đổi tài khoản
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Cài đặt Claude Code, sau đó chạy `claude auth login` trong terminal. Để đổi tài khoản, hãy dùng quy trình đăng xuất/đăng nhập chính thức và kiểm tra lại kết nối.
+	Official authentication instructions	Hướng dẫn xác thực chính thức
+	Scope	Phạm vi
+	Automatic: selected text, or the current paragraph when nothing is selected.	Tự động: văn bản đã chọn, hoặc đoạn hiện tại khi không chọn gì.
+	Include the whole document as context	Đưa toàn bộ tài liệu vào làm ngữ cảnh
+	I approve sending the whole document for this request	Tôi đồng ý gửi toàn bộ tài liệu cho yêu cầu này
+	What would you like to do with this text?	Bạn muốn thực hiện gì với văn bản này?
+	Improve writing	Cải thiện cách viết
+	Make concise	Làm ngắn gọn
+	More formal	Trang trọng hơn
+	More informal	Thân mật hơn
+	Correct spelling and grammar	Sửa chính tả và ngữ pháp
+	Summarize	Tóm tắt
+	Tone	Giọng điệu
+	Rewrite tone	Viết lại giọng điệu
+	Generate	Tạo
+	Explain / suggest improvements	Giải thích / đề xuất cải thiện
+	Claude is processing…	Claude đang xử lý…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Chỉ văn bản được yêu cầu rõ ràng mới được gửi. Hãy xem lại trước khi áp dụng. Lịch sử được giữ trong bộ nhớ của cửa sổ này và sẽ bị xóa khi thoát.
+	Proposal	Đề xuất
+	The document changed. Regenerate before applying this proposal.	Tài liệu đã thay đổi. Hãy tạo lại trước khi áp dụng đề xuất này.
+	Applied	Đã áp dụng
+	Apply all	Áp dụng tất cả
+	Discard	Hủy bỏ
+	Regenerate	Tạo lại
+	Undo last application	Hoàn tác lần áp dụng gần nhất
+	Original	Bản gốc
+	Section	Phần
+	Request	Yêu cầu
+	Writing Assistant Context	Ngữ cảnh Trợ lý viết
+	Apply Writing Assistant Changes	Áp dụng thay đổi của Trợ lý viết
+	Claude Code default	Mặc định của Claude Code

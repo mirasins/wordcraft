@@ -1,0 +1,43 @@
+# AI draft pending native review
+	Waiting for Claude…	Esperando a Claude…
+	Cancelling…	Cancelando…
+	Request cancelled. Text already sent cannot be retracted.	Solicitud cancelada. El texto ya enviado no se puede retirar.
+	Writing Assistant	Asistente de escritura
+	Writing\nAssistant	Asistente\nde escritura
+	Check connection	Comprobar conexión
+	Connected with Claude account	Conectado con la cuenta de Claude
+	Disconnected / authentication required	Desconectado / se requiere autenticación
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Usa Claude Code oficial con tu cuenta u OAuth. Sin claves de API ni proveedores alternativos.
+	Sign in or change account	Iniciar sesión o cambiar de cuenta
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Instala Claude Code y luego ejecuta `claude auth login` en tu terminal. Para cambiar de cuenta, usa su flujo oficial de cierre e inicio de sesión y vuelve a comprobar la conexión.
+	Official authentication instructions	Instrucciones oficiales de autenticación
+	Scope	Ámbito
+	Automatic: selected text, or the current paragraph when nothing is selected.	Automático: el texto seleccionado o, si no hay selección, el párrafo actual.
+	Include the whole document as context	Incluir todo el documento como contexto
+	I approve sending the whole document for this request	Apruebo enviar el documento completo para esta solicitud
+	What would you like to do with this text?	¿Qué quieres hacer con este texto?
+	Improve writing	Mejorar la redacción
+	Make concise	Hacer más conciso
+	More formal	Más formal
+	More informal	Más informal
+	Correct spelling and grammar	Corregir ortografía y gramática
+	Summarize	Resumir
+	Tone	Tono
+	Rewrite tone	Reescribir con este tono
+	Generate	Generar
+	Explain / suggest improvements	Explicar o sugerir mejoras
+	Claude is processing…	Claude está procesando…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Solo se envía el texto que pides de forma explícita. Revísalo antes de aplicarlo. El historial se guarda en la memoria de esta ventana y se borra al salir.
+	Proposal	Propuesta
+	The document changed. Regenerate before applying this proposal.	El documento ha cambiado. Vuelve a generar antes de aplicar esta propuesta.
+	Applied	Aplicado
+	Apply all	Aplicar todo
+	Discard	Descartar
+	Regenerate	Volver a generar
+	Undo last application	Deshacer la última aplicación
+	Original	Original
+	Section	Sección
+	Request	Solicitud
+	Writing Assistant Context	Contexto del Asistente de escritura
+	Apply Writing Assistant Changes	Aplicar cambios del Asistente de escritura
+	Claude Code default	Predeterminado de Claude Code

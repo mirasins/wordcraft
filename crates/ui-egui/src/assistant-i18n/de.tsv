@@ -1,0 +1,44 @@
+# AI draft pending native review
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Warten auf Claude…
+	Cancelling…	Abbrechen…
+	Request cancelled. Text already sent cannot be retracted.	Anfrage abgebrochen. Bereits gesendeter Text kann nicht zurückgenommen werden.
+	Writing Assistant	Schreibassistent
+	Writing\nAssistant	Schreib-\nassistent
+	Check connection	Verbindung prüfen
+	Connected with Claude account	Mit Claude-Konto verbunden
+	Disconnected / authentication required	Getrennt / Authentifizierung erforderlich
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Verwendet das offizielle Claude Code mit Ihrem Konto/OAuth. Keine API-Schlüssel oder Ersatzanbieter.
+	Sign in or change account	Anmelden oder Konto wechseln
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Installieren Sie Claude Code und führen Sie anschließend `claude auth login` in Ihrem Terminal aus. Um das Konto zu wechseln, verwenden Sie den offiziellen Abmelde-/Anmeldevorgang und prüfen Sie die Verbindung erneut.
+	Official authentication instructions	Offizielle Authentifizierungsanleitung
+	Scope	Bereich
+	Automatic: selected text, or the current paragraph when nothing is selected.	Automatisch: markierter Text oder der aktuelle Absatz, wenn nichts markiert ist.
+	Include the whole document as context	Gesamtes Dokument als Kontext einbeziehen
+	I approve sending the whole document for this request	Ich genehmige das Senden des gesamten Dokuments für diese Anfrage
+	What would you like to do with this text?	Was möchten Sie mit diesem Text tun?
+	Improve writing	Schreibstil verbessern
+	Make concise	Kürzen
+	More formal	Förmlicher
+	More informal	Informeller
+	Correct spelling and grammar	Rechtschreibung und Grammatik korrigieren
+	Summarize	Zusammenfassen
+	Tone	Ton
+	Rewrite tone	Ton umschreiben
+	Generate	Generieren
+	Explain / suggest improvements	Erklären / Verbesserungen vorschlagen
+	Claude is processing…	Claude verarbeitet…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Es wird nur ausdrücklich angeforderter Text gesendet. Vor dem Übernehmen prüfen. Der Verlauf bleibt im Speicher dieses Fensters und wird beim Beenden gelöscht.
+	Proposal	Vorschlag
+	The document changed. Regenerate before applying this proposal.	Das Dokument wurde geändert. Erzeugen Sie den Vorschlag vor dem Übernehmen neu.
+	Applied	Übernommen
+	Apply all	Alle übernehmen
+	Discard	Verwerfen
+	Regenerate	Neu generieren
+	Undo last application	Letzte Übernahme rückgängig machen
+	Original	Original
+	Section	Abschnitt
+	Request	Anfrage
+	Writing Assistant Context	Kontext des Schreibassistenten
+	Apply Writing Assistant Changes	Änderungen des Schreibassistenten übernehmen
+	Claude Code default	Standard von Claude Code

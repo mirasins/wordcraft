@@ -1,0 +1,44 @@
+# AI draft pending native review
+# Writing assistant (gap 25); machine-drafted from the English meaning, pending native review
+	Waiting for Claude…	Ootan Claude'i…
+	Cancelling…	Tühistamine…
+	Request cancelled. Text already sent cannot be retracted.	Päring tühistati. Juba saadetud teksti ei saa tagasi võtta.
+	Writing Assistant	Kirjutamisabiline
+	Writing\nAssistant	Kirjutamis\nabiline
+	Check connection	Kontrolli ühendust
+	Connected with Claude account	Ühendatud Claude'i kontoga
+	Disconnected / authentication required	Ühendus katkestatud / autentimine on vajalik
+	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Kasutab ametlikku Claude Code'i koos sinu konto/OAuthiga. Ei kasuta API-võtmeid ega varuteenuseid.
+	Sign in or change account	Logi sisse või vaheta kontot
+	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Installi Claude Code ja käivita seejärel terminalis `claude auth login`. Konto vahetamiseks kasuta ametlikku väljalogimise/sisselogimise protsessi ja kontrolli ühendust uuesti.
+	Official authentication instructions	Ametlikud autentimisjuhised
+	Scope	Ulatus
+	Automatic: selected text, or the current paragraph when nothing is selected.	Automaatne: valitud tekst või praegune lõik, kui midagi pole valitud.
+	Include the whole document as context	Kaasa kogu dokument kontekstina
+	I approve sending the whole document for this request	Kiidan heaks kogu dokumendi saatmise selle päringu jaoks
+	What would you like to do with this text?	Mida soovid selle tekstiga teha?
+	Improve writing	Paranda kirjutist
+	Make concise	Muuda lühemaks
+	More formal	Ametlikum
+	More informal	Vabam
+	Correct spelling and grammar	Paranda õigekiri ja grammatika
+	Summarize	Kokkuvõte
+	Tone	Toon
+	Rewrite tone	Kirjuta toon ümber
+	Generate	Genereeri
+	Explain / suggest improvements	Selgita / paku täiustusi
+	Claude is processing…	Claude töötleb…
+	Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit.	Saadetakse ainult selgesõnaliselt päritud tekst. Enne rakendamist vaata üle. Ajalugu jääb selle akna mällu ja tühjendatakse väljumisel.
+	Proposal	Ettepanek
+	The document changed. Regenerate before applying this proposal.	Dokumenti on muudetud. Genereeri see ettepanek enne rakendamist uuesti.
+	Applied	Rakendatud
+	Apply all	Rakenda kõik
+	Discard	Loobu
+	Regenerate	Genereeri uuesti
+	Undo last application	Võta viimane rakendamine tagasi
+	Original	Algne
+	Section	Jaotis
+	Request	Päring
+	Writing Assistant Context	Kirjutamisabilise kontekst
+	Apply Writing Assistant Changes	Rakenda kirjutamisabilise muudatused
+	Claude Code default	Claude Code'i vaikimisi
