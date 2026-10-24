@@ -75,9 +75,8 @@ explanation is written in the interface language. Then:
 
 - **Apply** applies one suggestion. **Apply all** applies the rest of the proposal.
 - After an application, the window takes the document's new state, so the remaining suggestions
-  can be applied one after another. If the document is changed by something else, or
-  **Track Changes** is on (the window cannot update the proposal then), the remaining
-  suggestions are stale: **Regenerate** asks again.
+  can be applied one after another, also with **Track Changes** on. If the document is changed
+  by something else, the remaining suggestions are stale: **Regenerate** asks again.
 - **Copy** copies the suggested text to the clipboard without changing the document.
 - **Discard** removes the proposal from the window.
 - **Undo last application** undoes the last application in one step, while the document has not

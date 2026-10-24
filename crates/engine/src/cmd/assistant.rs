@@ -25,9 +25,6 @@ fn context(s: &mut Session, v: &Value) -> CmdResult {
 fn apply(s: &mut Session, v: &Value) -> CmdResult {
     let req: ApplyRequest = serde_json::from_value(v.clone()).map_err(|e| CmdError::Params(format!("bad parameters: {e}")))?;
     let applied = assistant::apply(s, &req)?;
-    let mut out = json!({"applied": applied.count, "documentId": s.document_id()});
-    if let Some(ctx) = applied.context {
-        out["context"] = serde_json::to_value(ctx).map_err(|e| CmdError::Failed(e.to_string()))?;
-    }
-    Ok(out)
+    let context = serde_json::to_value(applied.context).map_err(|e| CmdError::Failed(e.to_string()))?;
+    Ok(json!({"applied": applied.count, "documentId": s.document_id(), "context": context}))
 }

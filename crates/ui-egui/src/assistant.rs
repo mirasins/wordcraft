@@ -24,6 +24,7 @@ struct Pending {
     cancel: Arc<AtomicBool>,
     receiver: Receiver<Answer>,
     context: Option<Value>,
+    /// The user's own words, before the explain prefix and language line are added.
     instruction: String,
     explain_only: bool,
 }
@@ -33,7 +34,9 @@ struct Proposal {
     context: Value,
     /// Original display text is immutable even when the engine returns a refreshed snapshot.
     originals: Vec<String>,
+    /// What Regenerate sends again: the user's instruction and whether it was an explain request.
     instruction: String,
+    explain_only: bool,
     response: Response,
     applied: Vec<usize>,
     dismissed: bool,
@@ -169,12 +172,26 @@ fn status(state: &State) -> Value {
 }
 
 #[cfg(target_arch = "wasm32")]
-fn launch(_app: &mut WordApp, _context: Option<Value>, _request: Option<Request>, _explain: bool, _model: Option<String>) -> Result<Value, String> {
+fn launch(
+    _app: &mut WordApp,
+    _context: Option<Value>,
+    _request: Option<Request>,
+    _instruction: String,
+    _explain: bool,
+    _model: Option<String>,
+) -> Result<Value, String> {
     Err("The writing assistant requires the desktop app and official Claude Code".into())
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn launch(app: &mut WordApp, context: Option<Value>, request: Option<Request>, explain: bool, model: Option<String>) -> Result<Value, String> {
+fn launch(
+    app: &mut WordApp,
+    context: Option<Value>,
+    request: Option<Request>,
+    instruction: String,
+    explain: bool,
+    model: Option<String>,
+) -> Result<Value, String> {
     if app.assistant.pending.is_some() {
         return Err("a writing request is already running".into());
     }
@@ -182,7 +199,6 @@ fn launch(app: &mut WordApp, context: Option<Value>, request: Option<Request>, e
     let cancel = Arc::new(AtomicBool::new(false));
     let worker_cancel = cancel.clone();
     let wake = app.ctx.clone();
-    let instruction = request.as_ref().map(|r| r.instruction.clone()).unwrap_or_default();
     std::thread::Builder::new()
         .name("writing-assistant".into())
         .spawn(move || {
@@ -209,7 +225,7 @@ fn launch(app: &mut WordApp, context: Option<Value>, request: Option<Request>, e
 }
 
 fn start_auth(app: &mut WordApp) -> Result<Value, String> {
-    launch(app, None, None, false, None)
+    launch(app, None, None, String::new(), false, None)
 }
 
 fn start_suggestion(app: &mut WordApp, params: &Value) -> Result<Value, String> {
@@ -258,12 +274,12 @@ fn start_suggestion(app: &mut WordApp, params: &Value) -> Result<Value, String> 
     } else {
         None
     };
-    let instruction =
-        if explain { format!("Explain or suggest improvements only. Return no replacement suggestions. {instruction}") } else { instruction };
-    let instruction = explain_in_interface_language(instruction, crate::i18n::current());
-    let request = Request { instruction, targets, context: document_context };
+    let sent =
+        if explain { format!("Explain or suggest improvements only. Return no replacement suggestions. {instruction}") } else { instruction.clone() };
+    let sent = explain_in_interface_language(sent, crate::i18n::current());
+    let request = Request { instruction: sent, targets, context: document_context };
     request.validate().map_err(|error| error.to_string())?;
-    launch(app, Some(context), Some(request), explain, model)
+    launch(app, Some(context), Some(request), instruction, explain, model)
 }
 
 /// Outside English, asks for the explanation in the interface language, so it reads like the rest
@@ -314,6 +330,7 @@ pub fn poll(app: &mut WordApp) {
                     context,
                     originals,
                     instruction: pending.instruction,
+                    explain_only: pending.explain_only,
                     response,
                     applied: Vec::new(),
                     dismissed: false,
@@ -717,8 +734,7 @@ fn history(ui: &mut egui::Ui, state: &State, live: (u64, u64), action: &mut Acti
                     *action = Some(("assistant.discard", json!({"id":proposal.id})));
                 }
                 if ui.add_enabled(!busy && may_send(state), egui::Button::new(tl!("Regenerate"))).clicked() {
-                    let explain = proposal.response.suggestions.is_empty();
-                    *action = Some(("assistant.suggest", request_params(state, &proposal.instruction, explain)));
+                    *action = Some(("assistant.suggest", request_params(state, &proposal.instruction, proposal.explain_only)));
                 }
                 let can_undo = same_doc && proposal.undo_revision == Some(live.1);
                 if ui.add_enabled(can_undo, egui::Button::new(tl!("Undo last application"))).clicked() {
@@ -836,6 +852,63 @@ mod tests {
         assert_eq!(body(&app), "First draft line.\nSecond line.\nUntouched.");
         app.execute("edit.undo", json!({})).unwrap();
         assert_eq!(body(&app), "First draft line.\nSecond draft line.\nUntouched.");
+    }
+
+    #[test]
+    fn successive_applications_work_with_track_changes() {
+        let mut app = WordApp::new(
+            wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("First draft line.\nSecond draft line.")),
+            Default::default(),
+        );
+        app.session.doc.settings.track_changes = true;
+        let context = app.session.run("assistant.context", &json!({"scope":"document","confirm_document":true})).unwrap();
+        let (sender, receiver) = std::sync::mpsc::channel();
+        app.assistant.pending = Some(Pending {
+            cancel: Arc::new(AtomicBool::new(false)),
+            receiver,
+            context: Some(context),
+            instruction: "Tidy".into(),
+            explain_only: false,
+        });
+        sender
+            .send(Answer::Suggestion(Ok((
+                AuthState::Account,
+                Response {
+                    suggestions: vec![
+                        wordcraft_assistant::Suggestion { index: 0, text: "First line.".into() },
+                        wordcraft_assistant::Suggestion { index: 1, text: "Second line.".into() },
+                    ],
+                    explanation: String::new(),
+                },
+            ))))
+            .unwrap();
+        poll(&mut app);
+        app.execute("assistant.accept", json!({"id":1,"index":0})).unwrap();
+        // The proposal follows the document's revision, so the other suggestion still applies.
+        app.execute("assistant.accept", json!({"id":1,"index":1})).unwrap();
+        assert!(app.execute("assistant.accept", json!({"id":1})).is_err(), "nothing left to apply");
+    }
+
+    #[test]
+    fn proposal_keeps_the_users_instruction_and_explain_mode_for_regenerate() {
+        let mut app = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("Hello there.\nSecond.")), Default::default());
+        let context = app.session.run("assistant.context", &json!({"scope":"auto"})).unwrap();
+        let (sender, receiver) = std::sync::mpsc::channel();
+        app.assistant.pending = Some(Pending {
+            cancel: Arc::new(AtomicBool::new(false)),
+            receiver,
+            context: Some(context),
+            instruction: "Why?".into(),
+            explain_only: true,
+        });
+        sender.send(Answer::Suggestion(Ok((AuthState::Account, Response { suggestions: Vec::new(), explanation: "Because.".into() })))).unwrap();
+        poll(&mut app);
+        let proposal = app.assistant.history.front().unwrap();
+        assert_eq!(proposal.instruction, "Why?", "no explain prefix or language line to send again");
+        assert!(proposal.explain_only);
+        let params = request_params(&app.assistant, &proposal.instruction, proposal.explain_only);
+        assert_eq!(params["instruction"], "Why?");
+        assert_eq!(params["explain_only"], true);
     }
 
     #[test]

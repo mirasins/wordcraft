@@ -116,7 +116,10 @@ pub fn suggest(session: &mut Session, params: &Value, generate: impl FnOnce(&Req
     let reply = generate(&request)?;
     let response: Response = serde_json::from_value(reply).map_err(|_| "the assistant returned an invalid answer".to_string())?;
     check_response(&response, request.targets.len())?;
-    let suggestions = if p.explain_only { Vec::new() } else { response.suggestions };
+    // A suggestion that repeats its original would make `assistant.apply` refuse the whole batch
+    // ("the text is unchanged"); drop it, as the desktop window does.
+    let mut suggestions = if p.explain_only { Vec::new() } else { response.suggestions };
+    suggestions.retain(|s| request.targets.get(s.index).is_some_and(|original| *original != s.text));
     Ok(json!({"context": snapshot, "suggestions": suggestions, "explanation": response.explanation}))
 }
 
@@ -167,6 +170,20 @@ mod tests {
 
     fn explain_reply() -> Value {
         json!({"suggestions": [{"index": 0, "text": "Fast."}], "explanation": "Short and clear."})
+    }
+
+    #[test]
+    fn unchanged_suggestions_are_dropped_so_apply_succeeds() {
+        let mut h = headless("Alpha is slow.\nBeta is fine.");
+        let reply = json!({"suggestions": [{"index": 0, "text": "Alpha is fast."}, {"index": 1, "text": "Beta is fine."}], "explanation": ""});
+        let out =
+            suggest(&mut h.session, &json!({"instruction": "Improve", "scope": "document", "confirm_document": true}), provider(reply)).unwrap();
+        assert_eq!(out["suggestions"], json!([{"index": 0, "text": "Alpha is fast."}]));
+        let applied = h
+            .call("engine.execute", json!({"command": "assistant.apply", "params": {"context": out["context"], "changes": out["suggestions"]}}))
+            .unwrap();
+        assert_eq!(applied["applied"], 1);
+        assert_eq!(text_of(&mut h), "Alpha is fast.\nBeta is fine.");
     }
 
     #[test]

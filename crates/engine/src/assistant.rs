@@ -26,6 +26,10 @@ pub struct Target {
     pub start: Pos,
     pub end: Pos,
     pub original: String,
+    /// Set by a tracked apply: the paragraph now holds the tracked deletion, so this target's text
+    /// is no longer checked and it can't be applied again.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub applied: bool,
 }
 
 /// What the assistant was given: the document identity and revision it was read at, the
@@ -64,13 +68,13 @@ pub struct ContextParams {
     pub confirm_document: bool,
 }
 
-/// What `apply` did: how many paragraphs changed and, outside Track Changes, the context for the
-/// next apply (at the revision the command leaves). With Track Changes the context is `None`:
-/// the caller reads the document again.
+/// What `apply` did: how many paragraphs changed and the context for the next apply (at the
+/// revision the command leaves). With Track Changes the applied targets are marked `applied`
+/// instead of updated (their paragraphs now hold tracked deletions); the others stay applicable.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Applied {
     pub count: usize,
-    pub context: Option<Context>,
+    pub context: Context,
 }
 
 fn refuse(msg: impl Into<String>) -> CmdError {
@@ -146,7 +150,7 @@ impl Collector {
         }
         let original = p.text.get(from..to).ok_or_else(|| fail(format!("paragraph {path}: offsets aren't on character boundaries")))?.to_string();
         self.bytes += len;
-        self.targets.push(Target { start: Pos::new(story, path.clone(), from), end: Pos::new(story, path.clone(), to), original });
+        self.targets.push(Target { start: Pos::new(story, path.clone(), from), end: Pos::new(story, path.clone(), to), original, applied: false });
         Ok(())
     }
 }
@@ -285,6 +289,9 @@ fn check_context(s: &Session, ctx: &Context) -> Result<(), CmdError> {
         if t.start.story != t.end.story || t.start.path != t.end.path || t.start.off > t.end.off {
             return Err(refuse(format!("target {i}: bad range")));
         }
+        if t.applied {
+            continue;
+        }
         let p = s.doc.para(t.start.story, &t.start.path).ok_or_else(|| fail(format!("target {i}: no such paragraph")))?;
         if p.text.contains(OBJ) {
             return Err(fail(format!("target {i}: paragraph holds an object or field; the assistant can't rewrite it")));
@@ -347,6 +354,9 @@ fn plan(ctx: &Context, changes: &[Change]) -> Result<Vec<Edit>, CmdError> {
                 ch.index
             )));
         }
+        if t.applied {
+            return Err(refuse(format!("change {}: the target was already applied with Track Changes", ch.index)));
+        }
         if ch.text == t.original {
             return Err(refuse(format!("change {}: the text is unchanged", ch.index)));
         }
@@ -394,16 +404,18 @@ pub fn apply(s: &mut Session, req: &ApplyRequest) -> Result<Applied, CmdError> {
         }
     }
     let count = edits.len();
-    if track {
-        return Ok(Applied { count, context: None });
-    }
     let mut updated = req.context.clone();
     for e in &edits {
         if let Some(t) = updated.targets.get_mut(e.idx) {
+            if track {
+                // The deleted text stays in the paragraph: the offsets no longer describe it.
+                t.applied = true;
+                continue;
+            }
             t.end = Pos { off: t.start.off.saturating_add(e.full.len()), ..t.start.clone() };
             t.original = e.full.clone();
         }
     }
     updated.revision = s.rev().saturating_add(1);
-    Ok(Applied { count, context: Some(updated) })
+    Ok(Applied { count, context: updated })
 }

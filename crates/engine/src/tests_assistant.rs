@@ -251,13 +251,17 @@ fn repeated_apply_with_updated_context() {
 }
 
 #[test]
-fn track_changes_returns_no_updated_context() {
+fn track_changes_keeps_the_other_targets_applicable() {
     let mut s = session("one\ntwo");
     s.doc.settings.track_changes = true;
     let c = ctx(&mut s, "document", true).unwrap();
     let v = s.run("assistant.apply", &apply_req(&c, json!([{"index": 0, "text": "ONE"}]))).unwrap();
     assert_eq!(v["applied"], 1);
-    assert!(v.get("context").is_none());
+    let next = v["context"].clone();
+    assert_eq!(next["revision"], json!(s.rev()));
+    assert!(s.run("assistant.apply", &apply_req(&next, json!([{"index": 0, "text": "uno"}]))).is_err(), "an applied target is stale");
+    let v = s.run("assistant.apply", &apply_req(&next, json!([{"index": 1, "text": "TWO"}]))).unwrap();
+    assert_eq!(v["applied"], 1);
 }
 
 fn first_para(s: &mut Session) -> &mut wordcraft_doc::Paragraph {
