@@ -8,7 +8,9 @@ use std::sync::{
 };
 
 use serde_json::{Value, json};
-use wordcraft_assistant::{AuthState, Provider, Request, Response};
+#[cfg(not(target_arch = "wasm32"))]
+use wordcraft_assistant::Provider;
+use wordcraft_assistant::{AuthState, Request, Response};
 
 use crate::WordApp;
 
@@ -33,6 +35,8 @@ pub(crate) fn icon_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
 
 enum Answer {
     Auth(Result<AuthState, String>),
+    // The web build has no worker to send it (`launch` refuses there); tests still build it.
+    #[cfg_attr(target_arch = "wasm32", allow(dead_code))]
     Suggestion(Result<(AuthState, Response), String>),
 }
 

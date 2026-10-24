@@ -154,10 +154,24 @@ Known limits of the process handling (from a review of `process.rs` and `client.
   prefix and interface-language instruction are added afresh, not accumulated on each retry.
 - A proposal records the context it was made from. Apply and Undo check its `document_id` and
   `revision` against the session; a stale proposal shows a regenerate message and no Apply.
-- `ui.assistant {value?}` toggles or sets the window. Opening it does not authenticate or send.
-  It opens at the right of the window; Escape closes it (and cancels a running request) unless a
-  popup takes the Escape. The request controls are a collapsing **Request** section that folds when
-  a proposal arrives; the proposals scroll below it.
+- `ui.assistant {value?}` toggles or sets the window, titled **Mirai Assistant**. Opening it does
+  not authenticate or send. It opens at the right of the window; Escape closes it (and cancels a
+  running request) unless a popup takes the Escape.
+- Layout, top to bottom: a one-line header (artwork, "Claude", a status dot plus the status in
+  words), the conversation (scrolls, oldest first), then the composer pinned at the bottom: quick
+  action chips (Improve writing, Make concise, Correct spelling and grammar, Explain / suggest
+  improvements), the draft, the Model drop-down and **Send message** on one row, the consent
+  checkbox, and the rarer actions under a collapsed **Writing options**.
+- The draft takes 40% of the window's height while the conversation is empty and 24% once it has
+  proposals, clamped to 96–420 px. Ctrl/Cmd+Enter sends from the draft (taken before the field
+  sees it, so it inserts no line break); plain Enter adds a line. The send button's tooltip shows
+  the shortcut.
+- Colours are the `assistant_*` tokens in `theme.rs`, taken from the owner's "Ps. Iván Oda" design
+  system: `wash` background, `paper` surface, `card-lilac` bubbles and chips, `purple` accent,
+  `button` send fill, `muted` secondary text. That system has a light theme only; the dark values
+  derive from its `ink` and `on-ink-tint`. Radii follow it too (7 px button, 14 px bubbles, 16 px
+  composer). Its fonts (Playfair Display, DM Sans) are not used: font files belong in
+  `craft-fonts`, not this repository.
 - The review diff is word by word (`word_diff`): shared tokens at both ends, then a longest common
   subsequence of the middle, capped at 250,000 token pairs (one removed and one added span past
   that).
@@ -239,3 +253,4 @@ unchanged target does not cause the whole apply batch to be refused.
 | 2026-10-23 | minor | `assistant` moved to L4; `Provider` trait and `--model`; live validation; process limits documented; `apiProvider` check; word diff; tests and gates updated |
 | 2026-10-24 | minor | Integrated review fixes: successive tracked applications, unchanged MCP suggestions omitted, and regeneration preserves the original instruction and explain-only mode. Windows CI passed all six gates (3,984 tests; 8 ignored); added an unrun offline client workflow for Windows/macOS/Linux and clarified the tracked-deletion regeneration limit |
 | 2026-10-24 | minor | Merged upstream/main `254351c0`: adapted translations to the external-catalog architecture with 26 assistant-only overlays, isolated shared labels with a translation context and added regression tests. Final Windows CI passed all 8 gates (4,081 tests; 8 ignored), and an English-only build check passed; no new live-account checks |
+| 2026-10-24 | minor | Renamed to Mirai Assistant (window, ribbon, context menu, command labels, 26 overlays; 11 languages' context/apply labels hand-written, pending native review). Larger draft (40%/24% of the window), quick-action chips above it, Ctrl/Cmd+Enter to send, palette and radii from the owner's design system; wasm-only unused-import and dead-variant warnings fixed. `cargo xtask ci` passed (8 gates); headless light and dark screenshots reviewed; no live-account checks |
