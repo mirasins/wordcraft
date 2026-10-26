@@ -1,5 +1,7 @@
 # WordCraft roadmap
 
+> **Title-bar update:** 2026-10-26 · Linux System theme keeps the desktop portal's answer authoritative instead of resetting native decorations when a window theme is reported. Synthetic regression reproduced before the fix; native visual confirmation pending.
+
 > **Save/export update:** 2026-10-26 · Documents is the default folder for new desktop saves and exports, with an explicit Save As destination. PDF export uses the dedicated exporter even when the chosen name has no extension. Dialog regressions and a synthetic PDF export pass; full CI still encounters the previously recorded Thai font failure.
 
 > **Highlight update:** 2026-10-25 · Highlight shortcut toggles the last chosen colour off when the whole selection has it; explicit colour commands remain setters (#4085). Readiness estimates unchanged.
@@ -142,6 +144,8 @@ Ranked, to beta (detail and remaining milestones in [docs/roadmap.md](docs/roadm
    (20–30 h).
 
 ## Progress log
+
+- 2026-10-26: M14 Linux native title-bar appearance: System theme no longer drops the portal's Light/Dark answer when the window reports its own theme. The regression reproduces unwanted `SetTheme(SystemDefault)` before the fix; it covers stable light/dark frames and a real portal switch with a stale native report. Manual preferences and non-Linux fallback remain unchanged. Native flicker confirmation remains a user acceptance check.
 
 - 2026-10-26: M13/M14 optional compact builds: same-source Fedora x86_64 RPM shrinks from 50,333,270 to 36,263,505 bytes (28.0%); stripped GUI/CLI binaries shrink 29.2%/26.2%. Speed-oriented release and panic unwinding remain unchanged; no formats, fonts or assets removed. A duplicated LaTeX colour formatter now uses `Rgb::hex`; 25 LaTeX tests pass. All 27 dialog tests, 34 Backstage tests, WASM, asset attribution and layering checks pass, and the Save As screenshot was reviewed. Full CI passes fmt/Clippy but still stops at the pre-existing Thai fallback font test; no general performance improvement is claimed.
 
@@ -658,6 +662,7 @@ Footer page-table height and body wrapping are corrected. Other pagination gaps 
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | trivial | M14: stable portal-driven native title-bar theme; regression against redundant decoration resets, native visual confirmation pending. |
 | 2026-10-26 | minor | M10: Documents default/destination and dedicated PDF-copy export; optional compact packaging profile and LaTeX colour-helper deduplication. |
 | 2026-10-24 | trivial | Progress log: writing assistant UI rework (gap 25) landed, CI passed (8 gates), headless screenshots reviewed; each request stays independent |
 | 2026-10-26 | trivial | Mirai fork synchronized with upstream/main 02120c84; MCP document routing and per-window assistant state retained; merge regression tests added |

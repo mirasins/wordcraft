@@ -1,5 +1,7 @@
 # UI parity with Microsoft Word
 
+> **Title-bar update:** 2026-10-26 · Linux System theme keeps the portal's answer stable despite native window theme reports. A regression reproduces redundant decoration resets before the fix and covers real portal switches; native visual confirmation pending.
+
 > **Save/export update:** 2026-10-26 · New desktop files start in the system Documents folder; File › Save As offers Documents and its actual path beside Browse. Existing files keep their folder. PDF export uses the dedicated exporter even without a filename extension; 27 dialog regressions and a synthetic PDF export pass. Full CI encounters the pre-existing Thai fallback font failure.
 
 > **Sync update:** 2026-10-26 · upstream/main `02120c84` merged with Mirai; each native window keeps its own assistant panel state, covered by the window-swap regression. Earlier Windows CI results below are historical, not validation of this merge.
@@ -87,6 +89,7 @@ Footnote and endnote editing keeps body and note text at normal opacity, on ligh
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | trivial | M14: desktop portal theme wins over native window feedback on Linux; manual and non-Linux preferences unchanged. Synthetic regression; native flicker acceptance pending. |
 | 2026-10-26 | trivial | M10: Documents default/destination for Save As and export; PDF export stays PDF and leaves editable work unsaved. 27 dialog regressions and a synthetic PDF export pass; full CI encounters the pre-existing Thai font failure. |
 | 2026-10-26 | trivial | Mirai preserved with upstream 02120c84 multi-window UI; each window owns and restores its assistant panel state |
 | 2026-10-26 | trivial | Integrated upstream UI/egui 0.37 work while retaining the Mirai Assistant right panel and whole-body consent behavior; all 8 local CI gates passed. |

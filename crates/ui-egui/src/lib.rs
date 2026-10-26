@@ -7,9 +7,10 @@
 
 /// What the operating system says about light and dark. macOS and Windows answer through winit;
 /// winit reports nothing on Linux, where the desktop portal does ([`desktop_theme`]). `None` means
-/// nobody answered, not a preference.
+/// nobody answered, not a preference. A portal answer is authoritative: a native
+/// theme report can reflect our own decoration override rather than a user change.
 fn system_theme(ctx: &egui::Context, desktop_dark: Option<bool>) -> Option<egui::Theme> {
-    ctx.system_theme().or_else(|| desktop_dark.map(|dark| if dark { egui::Theme::Dark } else { egui::Theme::Light }))
+    desktop_dark.map(|dark| if dark { egui::Theme::Dark } else { egui::Theme::Light }).or_else(|| ctx.system_theme())
 }
 
 /// An English UI string in the current interface language ([`i18n::t`]).
@@ -2497,10 +2498,13 @@ impl WordApp {
         }
         // Both palettes are installed and egui picks one: with `System` it follows an OS appearance
         // change live (winit reports it and repaints, #311). Where winit is silent (Linux) the
-        // desktop portal's answer fills in instead. The interface follows the Interface theme
+        // desktop portal's answer is authoritative. Do not switch back to System merely
+        // because the native window reports the Light/Dark override we just sent: that
+        // would reset the decorations and re-pin them on alternating redraws.
+        // The interface follows the Interface theme
         // setting alone; Dark page only changes how pages are drawn (#312).
         let effective = match self.ui.theme {
-            theme::Appearance::System if ctx.system_theme().is_none() => match self.desktop_dark {
+            theme::Appearance::System => match self.desktop_dark {
                 Some(true) => theme::Appearance::Dark,
                 Some(false) => theme::Appearance::Light,
                 None => theme::Appearance::System,
@@ -8943,6 +8947,39 @@ mod tests {
             let want = if dark { SystemTheme::Dark } else { SystemTheme::Light };
             assert!(sent.contains(&ViewportCommand::SetTheme(want)), "desktop dark {dark}: {sent:?}");
             assert_eq!(theme::Tokens::get(&ctx).dark, dark);
+        }
+    }
+
+    /// Native theme feedback must not repeatedly reset the portal's title-bar appearance.
+    #[test]
+    fn system_theme_portal_answer_stays_stable_when_native_theme_is_reported() {
+        use egui::{SystemTheme, Theme, ThemePreference, ViewportCommand};
+        for dark in [false, true] {
+            let ctx = egui::Context::default();
+            let mut a = app();
+            a.ui.theme = theme::Appearance::System;
+            a.desktop_dark = Some(dark);
+            let os_theme = if dark { Theme::Dark } else { Theme::Light };
+            let pinned = if dark { SystemTheme::Dark } else { SystemTheme::Light };
+            // First pin the native decorations to the portal's answer.
+            assert!(theme_frame(&ctx, &mut a, None).contains(&ViewportCommand::SetTheme(pinned)));
+            // A native response to that pin is not a new user preference. Subsequent
+            // pointer-driven frames must not reset the window to SystemDefault.
+            for os in [Some(os_theme), None, Some(os_theme), None] {
+                let sent = theme_frame(&ctx, &mut a, os);
+                assert!(!sent.iter().any(|c| matches!(c, ViewportCommand::SetTheme(_))), "stable portal {dark}, native {os:?}: {sent:?}");
+                assert_eq!(ctx.options(|o| o.theme_preference), if dark { ThemePreference::Dark } else { ThemePreference::Light });
+                assert_eq!(a.ui_is_dark(), dark);
+            }
+            // A real portal change wins even while the native report is still stale.
+            a.desktop_dark = Some(!dark);
+            let changed = theme_frame(&ctx, &mut a, Some(os_theme));
+            let next = if dark { SystemTheme::Light } else { SystemTheme::Dark };
+            assert!(changed.contains(&ViewportCommand::SetTheme(next)), "{changed:?}");
+            assert_eq!(a.ui_is_dark(), !dark);
+            assert_eq!(theme::Tokens::get(&ctx).dark, !dark);
+            let unchanged = theme_frame(&ctx, &mut a, Some(os_theme));
+            assert!(!unchanged.iter().any(|c| matches!(c, ViewportCommand::SetTheme(_))), "{unchanged:?}");
         }
     }
 
