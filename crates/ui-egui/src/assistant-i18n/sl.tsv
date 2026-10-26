@@ -13,7 +13,7 @@
 	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Namestite Claude Code, nato v terminalu zaženite `claude auth login`. Za spremembo računa uporabite uradni postopek odjave/prijave in ponovno preverite povezavo.
 	Official authentication instructions	Uradna navodila za overitev
 	Scope	Obseg
-	Automatic: selected text, or the current paragraph when nothing is selected.	Samodejno: izbrano besedilo ali trenutni odstavek, če ni nič izbrano.
+	Automatic: selected text, or the whole document when nothing is selected (approval required).	Samodejno: izbrano besedilo ali celoten dokument, če ni nič izbrano (potrebna je odobritev).
 	Include the whole document as context	Vključi celoten dokument kot kontekst
 	I approve sending the whole document for this request	Odobravam pošiljanje celotnega dokumenta za to zahtevo
 	What would you like to do with this text?	Kaj želite storiti s tem besedilom?

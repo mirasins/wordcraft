@@ -114,8 +114,9 @@ false. Nothing is sent before a request is started, and opening the window sends
 | `assistant.discard` | `id` | discards a proposal |
 | `assistant.cancel` | — | cancels the running local process; text already sent cannot be retracted |
 
-`confirm_document: true` is required whenever the scope covers every body paragraph in full, and
-for `include_document_context`. Without it the request is refused.
+`auto` uses selected text, or every body paragraph when there is no text selection. `confirm_document:
+true` is required whenever the scope covers every body paragraph in full (including `auto` without
+a selection), and for `include_document_context`. Without it the request is refused.
 
 ```json
 {"id": 1, "key": "<window key>", "method": "assistant.suggest",

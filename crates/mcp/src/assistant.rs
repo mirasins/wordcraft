@@ -140,7 +140,7 @@ pub fn command_metadata() -> Value {
         "label": "Request writing suggestions",
         "location": "Review › Mirai Assistant",
         "shortcut": null,
-        "params": "instruction: string; scope?: auto|selection|paragraph|section|document; confirm_document?: bool; include_document_context?: bool; explain_only?: bool; model?: string (Claude alias or id, e.g. sonnet, opus). Sends the chosen text to Claude; synchronous in the headless backend.",
+        "params": "instruction: string; scope?: auto|selection|paragraph|section|document; auto uses selected text, or the whole body when nothing is selected; confirm_document?: bool is required for any whole-body scope or include_document_context; explain_only?: bool; model?: string (Claude alias or id, e.g. sonnet, opus). Sends the chosen text to Claude; synchronous in the headless backend.",
         "mutates": false,
     })
 }
@@ -380,6 +380,28 @@ mod tests {
             Ok(json!({}))
         });
         assert!(r.is_err() && !called, "auto on a blank document covers the whole body");
+    }
+
+    #[test]
+    fn auto_without_selection_requires_consent_then_sends_the_whole_body() {
+        use wordcraft_doc::Pos;
+        let mut h = headless("Alpha.\nBeta.\nGamma.");
+        h.session.sel = wordcraft_engine::Selection::caret(Pos::body(2, 3));
+        let mut called = false;
+        let refused = suggest(&mut h.session, &json!({"instruction": "Review"}), |_| {
+            called = true;
+            Ok(json!({"suggestions": [], "explanation": "ok"}))
+        });
+        assert!(refused.is_err() && !called, "missing consent must not invoke the provider");
+
+        let mut targets = Vec::new();
+        let out = suggest(&mut h.session, &json!({"instruction": "Review", "confirm_document": true}), |request| {
+            targets = request.targets.clone();
+            Ok(json!({"suggestions": [], "explanation": "ok"}))
+        })
+        .unwrap();
+        assert_eq!(out["context"]["scope"], "document");
+        assert_eq!(targets, ["Alpha.", "Beta.", "Gamma."]);
     }
 
     #[test]

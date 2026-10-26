@@ -13,7 +13,7 @@
 	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Cài đặt Claude Code, sau đó chạy `claude auth login` trong terminal. Để đổi tài khoản, hãy dùng quy trình đăng xuất/đăng nhập chính thức và kiểm tra lại kết nối.
 	Official authentication instructions	Hướng dẫn xác thực chính thức
 	Scope	Phạm vi
-	Automatic: selected text, or the current paragraph when nothing is selected.	Tự động: văn bản đã chọn, hoặc đoạn hiện tại khi không chọn gì.
+	Automatic: selected text, or the whole document when nothing is selected (approval required).	Tự động: văn bản đã chọn hoặc toàn bộ tài liệu khi không chọn gì (cần xác nhận).
 	Include the whole document as context	Đưa toàn bộ tài liệu vào làm ngữ cảnh
 	I approve sending the whole document for this request	Tôi đồng ý gửi toàn bộ tài liệu cho yêu cầu này
 	What would you like to do with this text?	Bạn muốn thực hiện gì với văn bản này?

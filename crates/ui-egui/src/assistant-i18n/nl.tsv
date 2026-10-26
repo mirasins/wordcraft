@@ -13,7 +13,7 @@
 	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Installeer Claude Code en voer vervolgens `claude auth login` uit in uw terminal. Gebruik om het account te wijzigen de officiële uitlog-/inlogprocedure en controleer de verbinding opnieuw.
 	Official authentication instructions	Officiële authenticatie-instructies
 	Scope	Bereik
-	Automatic: selected text, or the current paragraph when nothing is selected.	Automatisch: geselecteerde tekst of de huidige alinea als er niets is geselecteerd.
+	Automatic: selected text, or the whole document when nothing is selected (approval required).	Automatisch: geselecteerde tekst of het hele document als niets is geselecteerd (goedkeuring vereist).
 	Include the whole document as context	Volledig document als context opnemen
 	I approve sending the whole document for this request	Ik keur goed dat het volledige document voor dit verzoek wordt verzonden
 	What would you like to do with this text?	Wat wilt u met deze tekst doen?

@@ -158,9 +158,9 @@ pub fn tool_definitions() -> Value {
         tool(
             "assistant_context",
             "Writing assistant context",
-            "What the writing assistant would work on: document id, revision, scope and target ranges with their original text. Local only; nothing is sent to a provider. The `document` scope needs confirm_document: true.",
+            "What the writing assistant would work on: document id, revision, scope and target ranges with their original text. Local only; nothing is sent to a provider. `auto` uses selected text, or the whole body with no selection. Any whole-body scope needs confirm_document: true.",
             obj(
-                json!({"scope": {"type": "string", "enum": ["auto", "selection", "paragraph", "section", "document"], "description": "Default auto"}, "confirm_document": {"type": "boolean", "description": "Required for the document scope"}}),
+                json!({"scope": {"type": "string", "enum": ["auto", "selection", "paragraph", "section", "document"], "description": "Default auto: selected text, or the whole body when no text is selected"}, "confirm_document": {"type": "boolean", "description": "Explicit consent required whenever the scope covers the whole body"}}),
                 &[]
             ),
             true
@@ -168,12 +168,12 @@ pub fn tool_definitions() -> Value {
         tool_world(
             "assistant_suggest",
             "Writing assistant suggest",
-            "Ask the writing assistant (your Claude Code account) for rewrites of the targets. Sends the instruction and the target text to the provider; with include_document_context (needs confirm_document: true) the whole document too. Does not change the document: apply with assistant_apply. explain_only returns an explanation with no suggestions.",
+            "Ask the writing assistant (your Claude Code account) for rewrites of the targets. `auto` uses selected text, or the whole body when nothing is selected. Sends the instruction and target text to the provider; any whole-body scope and include_document_context require explicit confirm_document: true. Does not change the document: apply with assistant_apply. explain_only returns an explanation with no suggestions.",
             obj(
                 json!({
                     "instruction": s("What to do with the text"),
-                    "scope": {"type": "string", "enum": ["auto", "selection", "paragraph", "section", "document"], "description": "Default auto"},
-                    "confirm_document": {"type": "boolean", "description": "Consent to the document scope"},
+                    "scope": {"type": "string", "enum": ["auto", "selection", "paragraph", "section", "document"], "description": "Default auto: selected text, or the whole body when no text is selected"},
+                    "confirm_document": {"type": "boolean", "description": "Explicit consent required whenever the scope covers the whole body"},
                     "include_document_context": {"type": "boolean", "description": "Send the whole document as context (needs confirm_document)"},
                     "explain_only": {"type": "boolean", "description": "Explain without suggesting rewrites"},
                     "model": {"type": "string", "description": "Claude model alias or id (sonnet, opus, haiku, claude-opus-5-5…); omit for Claude Code's default"}
@@ -414,6 +414,8 @@ mod tests {
             assert_eq!(schema["properties"][k]["type"], json!("boolean"), "{k}");
         }
         assert_eq!(schema["properties"]["scope"]["enum"], json!(["auto", "selection", "paragraph", "section", "document"]));
+        assert!(schema["properties"]["scope"]["description"].as_str().is_some_and(|s| s.contains("whole body when no text is selected")));
+        assert!(schema["properties"]["confirm_document"]["description"].as_str().is_some_and(|s| s.contains("whole body")));
         assert_eq!(definition("assistant_apply")["inputSchema"]["required"], json!(["context", "changes"]));
     }
 

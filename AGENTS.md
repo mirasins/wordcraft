@@ -63,11 +63,12 @@ Typing, Enter, Backspace, Tab, lists, AutoCorrect and AutoFormat follow Word's o
 - Parallel agents: separate `CARGO_TARGET_DIR` per agent; edit only the crates you own; delete your target dir when done (disk).
 
 ## OpenCode: delegación a subagentes
-- Delega en subagentes del proveedor `github-copilot` las tareas acotadas: búsquedas, revisiones, cambios pequeños y ejecución de pruebas.
+- Usa los proveedores `github-copilot` y `opencode-go` para delegar tareas acotadas: búsquedas, revisiones, implementación y ejecución de pruebas.
+- Utiliza modelos de ambos proveedores según la tarea, sin exigir verificación cruzada entre proveedores. El usuario decidirá cuándo verificar el trabajo o solicitar un agente verificador.
 - Usa modelos ligeros y de menor coste. Antes de elegir, consulta los modelos disponibles con `opencode.models`; no fijes identificadores ni versiones en el código o la documentación.
-- Elige siempre el modelo más pequeño que sea adecuado. No escales a un modelo premium ni a otro proveedor sin autorización explícita del usuario.
+- Elige siempre el modelo más pequeño que sea adecuado. No escales a un modelo premium ni a proveedores distintos de `github-copilot` y `opencode-go` sin autorización explícita del usuario.
 - El agente principal coordina, toma las decisiones complejas y hace la revisión final del trabajo delegado.
-- Si GitHub Copilot no está disponible, informa al usuario antes de sustituirlo por otro proveedor.
+- Si alguno de los dos proveedores no está disponible, informa al usuario y usa el otro cuando sea adecuado.
 
 ## Asistente de escritura: autenticación
 - El asistente de escritura usa exclusivamente el binario oficial de Claude Code con la sesión o el mecanismo OAuth oficialmente soportado del usuario; WordCraft no extrae ni copia sus tokens.

@@ -13,7 +13,7 @@
 	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Instalați Claude Code, apoi rulați `claude auth login` în terminal. Pentru a schimba contul, utilizați fluxul oficial de deconectare/conectare și verificați din nou conexiunea.
 	Official authentication instructions	Instrucțiuni oficiale de autentificare
 	Scope	Domeniu
-	Automatic: selected text, or the current paragraph when nothing is selected.	Automat: textul selectat sau paragraful curent, dacă nu este selectat nimic.
+	Automatic: selected text, or the whole document when nothing is selected (approval required).	Automat: textul selectat sau întregul document dacă nu este selectat nimic (necesită aprobare).
 	Include the whole document as context	Include întregul document ca context
 	I approve sending the whole document for this request	Aprob trimiterea întregului document pentru această solicitare
 	What would you like to do with this text?	Ce doriți să faceți cu acest text?

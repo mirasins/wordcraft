@@ -13,7 +13,7 @@
 	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Claude Code를 설치한 다음 터미널에서 `claude auth login`을 실행하세요. 계정을 변경하려면 공식 로그아웃/로그인 절차를 사용한 후 연결을 다시 확인하세요.
 	Official authentication instructions	공식 인증 안내
 	Scope	범위
-	Automatic: selected text, or the current paragraph when nothing is selected.	자동: 선택한 텍스트가 있으면 그 텍스트, 없으면 현재 단락.
+	Automatic: selected text, or the whole document when nothing is selected (approval required).	자동: 선택한 텍스트, 선택하지 않은 경우 전체 문서(승인 필요).
 	Include the whole document as context	전체 문서를 컨텍스트로 포함
 	I approve sending the whole document for this request	이 요청에 대해 전체 문서를 보내는 것을 승인합니다
 	What would you like to do with this text?	이 텍스트로 무엇을 하시겠습니까?

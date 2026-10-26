@@ -31,13 +31,16 @@ fn body(s: &Session) -> String {
 }
 
 #[test]
-fn auto_uses_caret_paragraph_without_selection() {
-    let mut s = session("one\ntwo");
+fn auto_without_selection_uses_the_whole_body_with_explicit_consent() {
+    let mut s = session("one\ntwo\nthree");
     s.sel = Selection::caret(Pos::body(1, 1));
-    let v = ctx(&mut s, "auto", false).unwrap();
-    assert_eq!(v["scope"], "paragraph");
-    assert_eq!(v["targets"].as_array().map(Vec::len), Some(1));
-    assert_eq!(v["targets"][0]["original"], "two");
+    assert!(ctx(&mut s, "auto", false).is_err());
+    let v = ctx(&mut s, "auto", true).unwrap();
+    assert_eq!(v["scope"], "document");
+    assert_eq!(v["targets"].as_array().map(Vec::len), Some(3));
+    assert_eq!(v["targets"][0]["original"], "one");
+    assert_eq!(v["targets"][1]["original"], "two");
+    assert_eq!(v["targets"][2]["original"], "three");
     assert_eq!(v["revision"], s.rev());
     assert_eq!(v["document_id"], s.document_id());
 }
@@ -50,6 +53,22 @@ fn selection_cuts_first_and_last_paragraph() {
     assert_eq!(v["scope"], "selection");
     let originals: Vec<&str> = v["targets"].as_array().map(|t| t.iter().filter_map(|x| x["original"].as_str()).collect()).unwrap_or_default();
     assert_eq!(originals, ["pha", "beta", "gam"]);
+    assert_eq!(v["targets"][0]["start"]["off"], 2);
+    assert_eq!(v["targets"][0]["end"]["off"], 5);
+    assert_eq!(v["targets"][1]["start"]["off"], 0);
+    assert_eq!(v["targets"][1]["end"]["off"], 4);
+    assert_eq!(v["targets"][2]["start"]["off"], 0);
+    assert_eq!(v["targets"][2]["end"]["off"], 3);
+}
+
+#[test]
+fn explicit_paragraph_scope_stays_at_the_caret_paragraph() {
+    let mut s = session("one\ntwo\nthree");
+    s.sel = Selection::caret(Pos::body(1, 1));
+    let v = ctx(&mut s, "paragraph", false).unwrap();
+    assert_eq!(v["scope"], "paragraph");
+    assert_eq!(v["targets"].as_array().map(Vec::len), Some(1));
+    assert_eq!(v["targets"][0]["original"], "two");
 }
 
 #[test]
@@ -105,6 +124,7 @@ fn too_many_paragraphs_is_refused_not_truncated() {
     let text = vec!["x"; MAX_TARGETS + 1].join("\n");
     let mut s = session(&text);
     assert!(ctx(&mut s, "document", true).is_err());
+    assert!(ctx(&mut s, "auto", true).is_err());
 }
 
 #[test]

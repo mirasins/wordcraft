@@ -9,7 +9,7 @@ use crate::{CmdError, CmdResult, CommandSpec, Session};
 pub fn specs() -> Vec<CommandSpec> {
     vec![
         CommandSpec::new("assistant.context", "Mirai Assistant Context", "Review › Mirai Assistant", context)
-            .params(r#"{"scope": "auto" | "selection" | "paragraph" | "section" | "document", "confirm_document"?: bool}"#)
+            .params(r#"{"scope": "auto" | "selection" | "paragraph" | "section" | "document", "confirm_document"?: bool} (auto uses selected text, or the whole body when there is no text selection; whole-body contexts require confirm_document: true)"#)
             .pure(),
         CommandSpec::new("assistant.apply", "Apply Mirai Assistant Changes", "Review › Mirai Assistant", apply)
             .params(r#"{"context": Context, "changes": [{"index": number, "text": string}]}"#),

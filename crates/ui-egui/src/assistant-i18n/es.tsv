@@ -2,9 +2,27 @@
 	Waiting for Claude…	Esperando a Claude…
 	Cancelling…	Cancelando…
 	Request cancelled. Text already sent cannot be retracted.	Solicitud cancelada. El texto ya enviado no se puede retirar.
-	Mirai Assistant	Mirai Assistant
+	Mirai Assistant	Asistente Mirai
+	Mirai	Mirai
 	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Comprobar conexión
+	Claude Code · consult the current document without applying changes automatically	Claude Code · consulta el documento actual, sin aplicar cambios automáticamente
+	New conversation	Nueva conversación
+	Connected	Conectado
+	Disconnected	Sin conexión
+	Reads a copy of the open document to answer. It does not modify your text.	Lee una copia del documento abierto para responder. No modifica tu texto.
+	How can I help with your document?	¿En qué te ayudo con tu documento?
+	Choose an idea to start or write your own question.	Elige una idea para empezar o escribe tu propia pregunta.
+	Summarize main ideas	Resumir ideas principales
+	Review clarity	Revisar la claridad
+	Suggest next steps	Proponer próximos pasos
+	Summarize the document's main ideas.	Resume el documento en sus ideas principales.
+	Review the document's clarity and point out parts that could be expressed more clearly.	Revisa la claridad del documento y señala qué partes podrían expresarse mejor.
+	Suggest concrete next steps based on this document.	Sugiere próximos pasos concretos a partir de este documento.
+	Ask about your document…	Pregunta sobre tu documento…
+	Press Enter to send · Shift+Enter for a new line	Intro para enviar · Mayús+Intro para salto de línea
+	Send	Enviar
+	Custom model alias or id	Alias o id de modelo personalizado
 	Connected with Claude account	Conectado con la cuenta de Claude
 	Disconnected / authentication required	Desconectado / se requiere autenticación
 	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Usa Claude Code oficial con tu cuenta u OAuth. Sin claves de API ni proveedores alternativos.
@@ -12,7 +30,7 @@
 	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Instala Claude Code y luego ejecuta `claude auth login` en tu terminal. Para cambiar de cuenta, usa su flujo oficial de cierre e inicio de sesión y vuelve a comprobar la conexión.
 	Official authentication instructions	Instrucciones oficiales de autenticación
 	Scope	Ámbito
-	Automatic: selected text, or the current paragraph when nothing is selected.	Automático: el texto seleccionado o, si no hay selección, el párrafo actual.
+	Automatic: selected text, or the whole document when nothing is selected (approval required).	Automático: el texto seleccionado o, si no hay selección, todo el documento (requiere aprobación).
 	Include the whole document as context	Incluir todo el documento como contexto
 	I approve sending the whole document for this request	Apruebo enviar el documento completo para esta solicitud
 	What would you like to do with this text?	¿Qué quieres hacer con este texto?

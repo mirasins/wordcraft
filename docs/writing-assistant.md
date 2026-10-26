@@ -2,8 +2,11 @@
 
 > **Status:** implemented and checked end to end with a real, signed-in Claude Code account (Claude Code 2.1.310, Windows 11): connection check, a rewrite, word-by-word review, apply, undo and redo, through the desktop app (control channel), the headless MCP path and the client library. Repository gates: `cargo xtask ci` passed on 2026-10-23 (fmt, clippy, 3,981 tests, assets, layers, wasm). Still open: a screen-reader
 > pass, and runs on macOS and Linux. Gap 25 in [gaps.md](gaps.md) tracks this. Revision history is
-> at the end. **Landed (2026-10-24):** the window layout and model choice described below are
-> in place. `cargo xtask ci` passed (8 gates); headless light and dark screenshots reviewed; no live-account check.
+> at the end. **Landed (2026-10-25):** the resizable 280 pt right panel, Mirai theme tokens, compact
+> composer, Spanish prompts, conditional connection error and local New conversation action are in
+> place. Focused assistant UI tests and `cargo check -p wordcraft-ui-egui --locked` passed; a dark
+> headless screenshot is available under the OpenCode temp directory. No authentication/backend
+> changes or live-account checks were made.
 
 The writing assistant drafts, rewrites, translates and summarises text inside WordCraft. It uses
 the **official Claude Code CLI** (`claude`) and your own account. WordCraft has no API keys, no
@@ -33,22 +36,29 @@ The desktop app is required; the web build reports the assistant as unavailable.
 - **Mirai Assistant** in the right-click menu.
 - **Ctrl+Alt+Shift+A** on Windows and Linux, **Cmd+Option+Shift+A** on macOS.
 
-Opening the window sends nothing and starts no process. **Escape** closes it (and cancels a
-running request). It opens beside the page, on the right, so the text under review stays visible.
+Opening the panel sends nothing and starts no process. **Escape** closes it (and cancels a
+running request). It docks to the right so the text under review stays visible.
 
-## The window
+## The panel
 
-- **Conversation:** your requests and Claude's proposals appear in order, from top to bottom. A
-  proposal shows its suggestions for review. This is a log of what you asked and what came back;
-  it is not a chat.
-- **Composer:** a fixed box at the bottom of the window, five lines tall, holds the instruction
-  and the Send button. It stays in place while the conversation scrolls.
-- **Welcome:** an empty window shows a centred WordCraft welcome with quick-action chips. Clicking
-  a chip requests that action on the selected scope; the same consent checks apply.
-- **Colours:** a lavender and lilac palette in both the light and the dark theme.
-- **Writing options:** scope, a custom model field and the whole-document context switch are folded
-  away so the conversation has room. The model drop-down stays inside the composer. The consent checkbox for whole-body
-  requests stays next to the composer and is never folded away.
+- **Layout:** a resizable panel docked to the right, initially 280 points wide. The document keeps
+  the remaining central space. Its Mirai palette follows the selected light or dark theme.
+- **Header:** a one-line **Mirai** wordmark in a dark-cyan capsule, a small connection status and a
+  discreet **New conversation** action. The longer no-auto-apply explanation is on the wordmark's
+  tooltip. A failed connection check shows an error card with **Check connection**; before the
+  first check, the action remains available under **Writing options**.
+- **Privacy note:** the assistant reads a copy of the open document and does not change it merely by
+  answering. Rewrites remain proposals: applying one is always a separate, explicit action.
+- **Welcome:** left-aligned with a pink sparkle and three starter chips. A chip fills and focuses the
+  draft; it does not send text. Requests and proposals remain in the scrollable conversation.
+- **Composer:** compact and pinned to the bottom. **Enter** sends, **Shift+Enter** inserts a line;
+  Ctrl/Cmd+Enter also sends. Enter during an IME composition is not submitted. Whole-document
+  consent remains explicit and visible for each request.
+- **Writing options:** scope, model selection/custom id, whole-document context, connection check,
+  tone and translation actions are folded away. Proposal review, Apply, Undo and Regenerate are
+  available under each proposal's **Review changes** disclosure.
+- **New conversation:** clears local proposals, draft, consent and errors, but leaves the document,
+  authentication and native document undo history untouched. It is disabled while a request runs.
 
 **Each request is independent.** WordCraft does not send earlier requests, proposals or the
 conversation as context, and the window is not a multi-turn chat. Each request carries only its
@@ -70,13 +80,13 @@ Only the text you choose is sent, and only when you press Send message or a writ
 
 | Scope | What is sent |
 |---|---|
-| Automatic | The selected text, or the paragraph with the caret when nothing is selected |
+| Automatic | The selected text, or every body paragraph when nothing is selected |
 | Selection | The selected text |
 | Paragraph | The paragraph with the caret |
 | Section | The paragraphs of the body section that holds the caret |
 | Whole document | Every body paragraph |
 
-When the chosen scope covers every body paragraph in full (a one-paragraph document in Automatic,
+When the chosen scope covers every body paragraph in full (Automatic without a text selection,
 a one-section document in Section, or Whole document), the request needs your approval. The
 window shows an explicit consent checkbox for each request, and it is never remembered: after
 each request it is cleared and must be ticked again. The whole body is never sent implicitly.
@@ -139,9 +149,9 @@ connection check after 30. Text already sent to Claude cannot be retracted by ca
 
 Labels say what each control does, and proposal state is written as text, not only colour:
 removed text is struck through and added text underlined. Automated tests check that the
-**Original**, **Suggested** and **Apply** labels reach the accessibility tree (AccessKit) and that
-the shortcut opens the window and Escape closes it. This has not yet been checked with a screen
-reader on any platform.
+**Original**, **Suggested** and **Apply** labels reach the accessibility tree (AccessKit), the
+starter chips fill the draft without sending, and the assistant shortcut opens the panel and Escape
+closes it. This has not yet been checked with a screen reader on any platform.
 
 ## Revision history
 
@@ -151,3 +161,6 @@ reader on any platform.
 | 2026-10-23 | minor | Validated with a live account (desktop app, MCP, library); model choice (`--model`); word-by-word diff; explanation in the interface language; Escape closes the window; request controls fold when a proposal arrives; Bedrock/Vertex/Foundry/gateway setups refused |
 | 2026-10-24 | minor | Review fixes allow successive tracked applications; clarified that regeneration over tracked deletions requires accepting or rejecting those revisions first. No new live-account validation |
 | 2026-10-24 | minor | Landed: chronological conversation with request and proposal entries; composer at the bottom (up to five lines, scroll capped at 160px); lavender/lilac palette in light and dark themes; centred welcome with quick chips; original bird icon (@mirasins, MIT OR Apache-2.0, in ATTRIBUTION) on the Review button, header and shortcut, not the app icon; Model drop-down (Default, Sonnet, Opus, Haiku) with a free-text alias or id under Writing options; authentication and options folded. Each request stays independent (no chat history sent, not multi-turn). `cargo xtask ci` passed (8 gates), release x64 static build produced, headless light and dark screenshots reviewed, synthetic capture-proposal test passed |
+| 2026-10-25 | minor | Replaced the floating window with a resizable 280 pt right panel; Mirai palette, conditional connection-error card, left-aligned welcome, three draft-filling chips, compact pinned composer and Enter/Shift+Enter/IME handling. New conversation clears local UI state only; proposals retain review/apply/undo disclosures, whole-document consent and authentication/backend behavior are unchanged. Focused assistant tests (20 passed) and `cargo check -p wordcraft-ui-egui --locked` passed; dark headless screenshot reviewed |
+| 2026-10-25 | trivial | Reduced header noise: one-line italic Mirai wordmark in a dedicated dark-cyan capsule with light-lavender text, compact unframed connection status and text-only New conversation. Light theme keeps the capsule dark for contrast |
+| 2026-10-25 | minor | Automatic scope uses selected text, or the whole body when there is no text selection. Whole-body consent remains explicit; the panel's automatic-scope hint and send gate reflect this default. |

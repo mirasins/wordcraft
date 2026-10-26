@@ -13,7 +13,7 @@
 	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Установіть Claude Code, потім виконайте `claude auth login` у терміналі. Щоб змінити обліковий запис, скористайтеся його офіційним процесом виходу/входу та знову перевірте з'єднання.
 	Official authentication instructions	Офіційні інструкції з автентифікації
 	Scope	Область
-	Automatic: selected text, or the current paragraph when nothing is selected.	Автоматично: виділений текст або поточний абзац, якщо нічого не виділено.
+	Automatic: selected text, or the whole document when nothing is selected (approval required).	Автоматично: виділений текст або весь документ, якщо нічого не виділено (потрібне підтвердження).
 	Include the whole document as context	Додати весь документ як контекст
 	I approve sending the whole document for this request	Я погоджуюся надіслати весь документ для цього запиту
 	What would you like to do with this text?	Що ви хочете зробити з цим текстом?

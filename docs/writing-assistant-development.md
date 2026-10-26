@@ -100,13 +100,14 @@ object-replacement characters.
 ## Engine: context and apply
 
 `assistant.context {scope, confirm_document?}` builds a snapshot: `document_id`, `revision`, the
-effective `scope` and `targets` (`start`, `end`, `original`). `auto` resolves to `selection` or
-`paragraph`. Column and table-cell selections are refused. Paragraphs with object or field
+effective `scope` and `targets` (`start`, `end`, `original`). `auto` resolves to `selection` when
+text is selected, or `document` when there is no text selection. Column and table-cell selections
+are refused. Paragraphs with object or field
 characters are refused.
 
 Consent: `confirm_document: true` is required whenever the chosen scope covers every body
-paragraph in full (`document`, a one-section `section`, or an `auto` paragraph in a one-paragraph
-document). No whole body is ever sent implicitly.
+paragraph in full (`document`, `auto` without a selection, a one-section `section`, or any other
+scope that covers the whole body). No whole body is ever sent implicitly.
 
 `assistant.apply {context, changes}` validates everything before changing anything:
 
@@ -137,7 +138,7 @@ Known limits of the process handling (from a review of `process.rs` and `client.
   Claude Code needs its proxy, certificate and configuration variables, and it is the user's own
   official binary.
 
-## UI: the window and the worker
+## UI: the panel and the worker
 
 - `State` is per window and not part of `ui.json`. Its `Drop` cancels a running request.
 - A request runs on a `writing-assistant` thread. `Client::discover`, `auth`, `generate` and the
@@ -147,31 +148,29 @@ Known limits of the process handling (from a review of `process.rs` and `client.
 - Context is taken on the UI thread through `assistant.context` before the thread starts. Whole
   document context is a second `assistant.context` call with `document` scope.
 - The consent checkbox is shown for every request, never persisted, and cleared after each request.
-  Errors from start, poll and apply are shown in the window.
+  Errors from start, poll and apply are shown in the panel.
 - History: `VecDeque` of proposals, newest first, trimmed to 8 entries and 1 MiB of estimated size.
   Nothing is persisted.
 - Regenerate keeps the user's original instruction and explicit explain-only mode; the explanation
   prefix and interface-language instruction are added afresh, not accumulated on each retry.
 - A proposal records the context it was made from. Apply and Undo check its `document_id` and
   `revision` against the session; a stale proposal shows a regenerate message and no Apply.
-- `ui.assistant {value?}` toggles or sets the window, titled **Mirai Assistant**. Opening it does
-  not authenticate or send. It opens at the right of the window; Escape closes it (and cancels a
-  running request) unless a popup takes the Escape.
-- Layout, top to bottom: a one-line header (artwork, "Claude", a status dot plus the status in
-  words), the conversation (scrolls, oldest first), then the composer pinned at the bottom: quick
-  action chips (Improve writing, Make concise, Correct spelling and grammar, Explain / suggest
-  improvements), the draft, the Model drop-down and **Send message** on one row, the consent
-  checkbox, and the rarer actions under a collapsed **Writing options**.
-- The draft takes 40% of the window's height while the conversation is empty and 24% once it has
-  proposals, clamped to 96–420 px. Ctrl/Cmd+Enter sends from the draft (taken before the field
-  sees it, so it inserts no line break); plain Enter adds a line. The send button's tooltip shows
-  the shortcut.
-- Colours are the `assistant_*` tokens in `theme.rs`, taken from the owner's "Ps. Iván Oda" design
-  system: `wash` background, `paper` surface, `card-lilac` bubbles and chips, `purple` accent,
-  `button` send fill, `muted` secondary text. That system has a light theme only; the dark values
-  derive from its `ink` and `on-ink-tint`. Radii follow it too (7 px button, 14 px bubbles, 16 px
-  composer). Its fonts (Playfair Display, DM Sans) are not used: font files belong in
-  `craft-fonts`, not this repository.
+- `ui.assistant {value?}` toggles the resizable, right-docked panel, initially 280 points wide.
+  Opening it does not authenticate or send. Escape closes it (and cancels a running request)
+  unless a popup takes the Escape.
+- Layout, top to bottom: Mirai header/status/New conversation, the copy/privacy note, optional
+  connection error, then a scrollable conversation with a left-aligned welcome and three chips
+  that fill/focus the draft without sending. The compact composer is pinned to the bottom; consent
+  stays explicit and visible, while scope/model/authentication and secondary actions are under
+  **Writing options**. Proposal diffs and Apply/Undo are under **Review changes**.
+- Enter sends; Shift+Enter inserts a line; Ctrl/Cmd+Enter remains a send shortcut. egui IME
+  preedit/commit events suppress submission during composition. New conversation clears only local
+  transcript/draft/consent/error state, not auth or the document's native undo stack.
+- Colours are the `assistant_*` tokens in `theme.rs`. Dark values follow Mirai's `global.css`
+  (`#191622` background, `#201b2d` surface, `#2a2438` raised surface, `#988bc7` purple,
+  `#ff79c6` pink, `#e96379` red); light values remain a coherent light counterpart and do not
+  force the app's global appearance. The wordmark capsule intentionally stays dark cyan (`#12383f`)
+  in both themes, with `#d7c8ff` italic Inter lettering; no new font files are bundled.
 - The review diff is word by word (`word_diff`): shared tokens at both ends, then a longest common
   subsequence of the middle, capped at 250,000 token pairs (one removed and one added span past
   that).
@@ -190,7 +189,7 @@ Known limits of the process handling (from a review of `process.rs` and `client.
 
 | Command | Where | Behaviour |
 |---|---|---|
-| `ui.assistant` | UI | Opens, closes or toggles the window |
+| `ui.assistant` | UI | Opens, closes or toggles the right panel |
 | `assistant.auth` | UI | Starts an auth check on a worker thread; returns `{started, poll}` |
 | `assistant.suggest` | UI | Requires `confirm_document: true` where the scope needs it; returns `{started, poll}` |
 | `assistant.status` | UI | `{busy, connection, message, proposals}` with proposal ids |
@@ -224,7 +223,7 @@ unchanged target does not cause the whole apply batch to be refused.
   with `haiku`.
 - The desktop app was driven through the control channel with an isolated
   `WORDCRAFT_PROFILE_DIR`: `ui.assistant`, `assistant.suggest`, polling `assistant.status` (about
-  6 s to the proposal), `assistant.accept`, `edit.undo`, with screenshots of the window.
+  6 s to the proposal), `assistant.accept`, `edit.undo`, with screenshots of the application window showing the panel.
 - Headless window screenshot: `WORDCRAFT_ASSISTANT_SCREENSHOT=<png> cargo test -p
   wordcraft-ui-egui --lib assistant_review_screenshot -- --ignored`.
 - Gates: `cargo xtask ci` passed on 2026-10-23 (fmt, clippy, 3,981 tests, assets, layers, wasm).
@@ -249,6 +248,7 @@ unchanged target does not cause the whole apply batch to be refused.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-25 | minor | Reworked the UI into a docked, resizable 280 pt right panel. Mirai palette tokens, conditional error card, draft-filling welcome chips, fixed compact composer, Enter/Shift+Enter with IME protection, and UI-only New conversation; review/apply/undo and backend/auth contracts retained. Focused tests and native `cargo check` passed; headless dark screenshot reviewed |
 | 2026-10-23 | major | First version: draft implementation. Not yet compiled in the repository gates, not run against a live account |
 | 2026-10-23 | minor | `assistant` moved to L4; `Provider` trait and `--model`; live validation; process limits documented; `apiProvider` check; word diff; tests and gates updated |
 | 2026-10-24 | minor | Integrated review fixes: successive tracked applications, unchanged MCP suggestions omitted, and regeneration preserves the original instruction and explain-only mode. Windows CI passed all six gates (3,984 tests; 8 ignored); added an unrun offline client workflow for Windows/macOS/Linux and clarified the tracked-deletion regeneration limit |

@@ -33,6 +33,29 @@ pub(crate) fn icon_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
     texture
 }
 
+/// Mirai wordmark logo embedded for the assistant header. Decode and rasterise only once per
+/// egui context; the source PNG is colour-keyed to transparent because it was supplied on an
+/// opaque background.
+pub(crate) fn logo_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
+    let id = egui::Id::new("mirai-assistant-logo");
+    if let Some(cached) = ctx.data(|data| data.get_temp::<Option<egui::TextureHandle>>(id)) {
+        return cached;
+    }
+    let texture = image::load_from_memory(include_bytes!("../../../assets/assistant/Logo.png.png")).ok().map(|image| {
+        let mut rgba = image.to_rgba8();
+        for pixel in rgba.pixels_mut() {
+            if pixel[0] > 245 && pixel[1] > 245 && pixel[2] > 245 {
+                pixel[3] = 0;
+            }
+        }
+        let image = image::imageops::resize(&rgba, 256, 128, image::imageops::FilterType::Lanczos3);
+        let pixels = egui::ColorImage::from_rgba_unmultiplied([image.width() as usize, image.height() as usize], image.as_raw());
+        ctx.load_texture("mirai-assistant-logo", pixels, egui::TextureOptions::LINEAR)
+    });
+    ctx.data_mut(|data| data.insert_temp(id, texture.clone()));
+    texture
+}
+
 enum Answer {
     Auth(Result<AuthState, String>),
     // The web build has no worker to send it (`launch` refuses there); tests still build it.
@@ -75,11 +98,13 @@ pub struct State {
     include_document: bool,
     confirmed: bool,
     connection: Option<AuthState>,
+    connection_error: Option<String>,
     message: String,
     pending: Option<Pending>,
     history: VecDeque<Proposal>,
     next_id: u64,
     focus: bool,
+    ime_composing: bool,
 }
 
 impl Default for State {
@@ -95,11 +120,13 @@ impl Default for State {
             include_document: false,
             confirmed: false,
             connection: None,
+            connection_error: None,
             message: String::new(),
             pending: None,
             history: VecDeque::new(),
             next_id: 1,
             focus: false,
+            ime_composing: false,
         }
     }
 }
@@ -115,9 +142,10 @@ impl Drop for State {
 /// UI/control command metadata. Merely enumerating commands never starts Claude Code.
 pub fn commands() -> Vec<Value> {
     [
-        ("ui.assistant", "Mirai Assistant", "value?: bool; omitted toggles the floating window"),
+        ("ui.assistant", "Mirai Assistant", "value?: bool; omitted toggles the right assistant panel"),
+        ("ui.assistant.newConversation", "New conversation", "Clears the assistant panel's local conversation, draft, consent and errors; never changes the document or authentication"),
         ("assistant.auth", "Check Claude connection", "Checks the official Claude Code account/OAuth login; no document is sent"),
-        ("assistant.suggest", "Request writing suggestions", "instruction: string; scope?: auto|selection|paragraph|section|document; confirm_document?: bool; include_document_context?: bool; explain_only?: bool; model?: string (Claude alias or id; omitted: Claude Code default). Sends the chosen text to Claude. Returns a job; poll assistant.status."),
+        ("assistant.suggest", "Request writing suggestions", "instruction: string; scope?: auto|selection|paragraph|section|document; auto uses selected text, or the whole document when nothing is selected; confirm_document?: bool is required for whole-body scope or include_document_context; explain_only?: bool; model?: string (Claude alias or id; omitted: Claude Code default). Sends the chosen text to Claude. Returns a job; poll assistant.status."),
         ("assistant.status", "Writing assistant status", "Returns busy, connection, message and local proposals"),
         ("assistant.cancel", "Cancel writing request", "Cancels the running local Claude Code process; cannot retract already transmitted text"),
         ("assistant.accept", "Apply writing suggestion", "id: proposal id; index?: target index (omitted applies all pending suggestions)"),
@@ -146,7 +174,29 @@ pub fn command(app: &mut WordApp, id: &str, params: &Value) -> Option<Result<Val
             }
             Ok(json!({"open":on}))
         }
-        "assistant.auth" => start_auth(app),
+        "ui.assistant.newConversation" => {
+            if app.assistant.pending.is_some() {
+                return Some(Err("a writing request is already running".into()));
+            }
+            app.assistant.instruction.clear();
+            app.assistant.confirmed = false;
+            app.assistant.message.clear();
+            app.assistant.connection_error = None;
+            app.assistant.history.clear();
+            app.assistant.focus = true;
+            Ok(json!({"cleared":true}))
+        }
+        "assistant.auth" => {
+            app.assistant.connection_error = None;
+            match start_auth(app) {
+                Ok(value) => Ok(value),
+                Err(error) => {
+                    app.assistant.connection_error = Some(error.clone());
+                    app.assistant.message.clone_from(&error);
+                    Err(error)
+                }
+            }
+        }
         "assistant.suggest" => start_suggestion(app, params),
         "assistant.status" => {
             poll(app);
@@ -328,10 +378,12 @@ pub fn poll(app: &mut WordApp) {
     match answer {
         Answer::Auth(Ok(auth)) => {
             app.assistant.connection = Some(auth);
+            app.assistant.connection_error = None;
             app.assistant.message.clear();
         }
         Answer::Suggestion(Ok((auth, mut response))) => {
             app.assistant.connection = Some(auth);
+            app.assistant.connection_error = None;
             app.assistant.message.clear();
             if pending.explain_only {
                 response.suggestions.clear();
@@ -359,9 +411,17 @@ pub fn poll(app: &mut WordApp) {
                 trim_history(&mut app.assistant);
             }
         }
-        Answer::Auth(Err(error)) | Answer::Suggestion(Err(error)) => {
+        Answer::Auth(Err(error)) => {
             if app.assistant.instruction.is_empty() {
-                app.assistant.instruction = pending.instruction;
+                app.assistant.instruction.clone_from(&pending.instruction);
+            }
+            app.assistant.connection = None;
+            app.assistant.connection_error = Some(error.clone());
+            app.assistant.message = error;
+        }
+        Answer::Suggestion(Err(error)) => {
+            if app.assistant.instruction.is_empty() {
+                app.assistant.instruction.clone_from(&pending.instruction);
             }
             app.assistant.connection = None;
             app.assistant.message = error;
@@ -548,84 +608,61 @@ fn draw_diff(ui: &mut egui::Ui, original: &str, suggested: &str) {
     }
 }
 
-/// A button press in the window, run after the window is drawn.
+/// A button press in the panel, run after it is drawn.
 type Action = Option<(&'static str, Value)>;
 
-/// Non-modal conversation with a pinned composer. Opening it never starts a provider call.
-pub fn show(app: &mut WordApp, ctx: &egui::Context) {
+/// Non-modal, docked assistant panel. Opening it never starts a provider call.
+pub fn show(app: &mut WordApp, ui: &mut egui::Ui, ctx: &egui::Context) {
     if !app.assistant.open {
         return;
     }
-    let mut open = true;
     let mut action: Action = None;
-    // Escape closes the window like a dialog (the document doesn't take Escape while it's open),
-    // unless a popup such as the scope list was open and takes it. Read before the window draws,
-    // so the Escape that closes the popup doesn't close the window too.
+    // Escape closes the panel unless a popup such as the scope list was open and takes it.
     let escape = !egui::Popup::is_any_open(ctx) && ctx.input(|i| i.key_pressed(egui::Key::Escape));
     let live = (app.session.document_id(), app.session.rev());
-    egui::Window::new(tl!("Mirai Assistant"))
-        .id(egui::Id::new("writing-assistant"))
-        .open(&mut open)
-        // Opens beside the page on the right, away from the text being reviewed.
-        .pivot(egui::Align2::RIGHT_TOP)
-        .default_pos(ctx.content_rect().right_top() + egui::vec2(-24.0, 190.0))
-        .default_width(480.0)
-        .default_height(700.0)
-        .min_width(360.0)
-        .min_height(440.0)
-        .vscroll(false)
-        .resizable(true)
-        .frame(egui::Frame::window(&ctx.global_style()).fill(crate::theme::Tokens::get(ctx).assistant_background))
-        .show(ctx, |ui| {
-            let tokens = crate::theme::Tokens::get(ctx);
-            let rect = ui.available_rect_before_wrap();
-            let mut glow = egui::Mesh::default();
-            glow.colored_vertex(rect.left_top(), tokens.assistant_background);
-            glow.colored_vertex(rect.right_top(), tokens.assistant_background);
-            glow.colored_vertex(rect.right_bottom(), tokens.assistant_bubble);
-            glow.colored_vertex(rect.left_bottom(), tokens.assistant_bubble);
-            glow.add_triangle(0, 1, 2);
-            glow.add_triangle(0, 2, 3);
-            ui.painter().add(egui::Shape::mesh(glow));
-            let state = &mut app.assistant;
-            let busy = state.pending.is_some();
-            account(ui, state, &mut action);
-            ui.separator();
-            // Writing is the main job: the draft gets a large share of the window, most of it
-            // while the conversation is still empty.
-            let empty = !busy && !state.history.iter().any(|p| !p.dismissed);
-            let field_height = (ui.available_height() * if empty { 0.4 } else { 0.24 }).clamp(96.0, 420.0);
-            egui::Panel::bottom("assistant-composer").frame(egui::Frame::NONE.inner_margin(egui::Margin::symmetric(0, 8))).show(ui, |ui| {
-                ui.add_enabled_ui(!busy, |ui| request(ui, state, field_height, &mut action));
-                ui.add_space(6.0);
-                ui.label(
-                    egui::RichText::new(tl!(
-                        "Only explicitly requested text is sent. Review before applying. History stays in this window's memory and is cleared on exit."
-                    ))
-                    .small()
-                    .color(tokens.assistant_muted),
-                );
-            });
-            egui::ScrollArea::vertical().id_salt("assistant-history").auto_shrink([false, false]).stick_to_bottom(true).show(ui, |ui| {
-                history(ui, state, live, &mut action);
-                if let Some(pending) = &state.pending {
-                    if pending.context.is_some() {
-                        message(ui, tl!("You"), &pending.instruction, true);
-                    }
-                    ui.horizontal(|ui| {
-                        ui.spinner();
-                        ui.label(tl!("Claude is processing…"));
-                        if ui.button(tl!("Cancel")).clicked() {
-                            action = Some(("assistant.cancel", json!({})));
-                        }
-                    });
-                }
+    let has_text_selection = !app.session.sel.is_collapsed();
+    let events = ctx.input(|input| input.events.clone());
+    let ime_event_this_frame = update_ime_composition(&mut app.assistant, &events);
+    let tokens = crate::theme::Tokens::get(ctx);
+    let frame = egui::Frame::new()
+        .fill(tokens.assistant_background)
+        .stroke(egui::Stroke::new(1.0, tokens.assistant_border))
+        .inner_margin(egui::Margin::same(12));
+    egui::Panel::right("writing-assistant-panel").resizable(true).default_size(280.0).min_size(240.0).max_size(520.0).frame(frame).show(ui, |ui| {
+        ui.spacing_mut().item_spacing.y = 8.0;
+        let state = &mut app.assistant;
+        let busy = state.pending.is_some();
+        header(ui, state, &mut action);
+        context_note(ui);
+        if let Some(error) = state.connection_error.as_deref() {
+            error_card(ui, error, true, &mut action);
+        } else if state.pending.is_none() && !state.message.is_empty() {
+            error_card(ui, &state.message, false, &mut action);
+        }
+        egui::Panel::bottom("assistant-composer-panel").frame(egui::Frame::NONE).show(ui, |ui| {
+            ui.add_enabled_ui(!busy, |ui| {
+                writing_options(ui, state, has_text_selection, &mut action);
+                ui.checkbox(&mut state.confirmed, tl!("I approve sending the whole document for this request"));
+                request(ui, state, has_text_selection, ime_event_this_frame, &mut action);
             });
         });
+        egui::ScrollArea::vertical().id_salt("assistant-history").auto_shrink([false, false]).stick_to_bottom(true).show(ui, |ui| {
+            history(ui, state, live, has_text_selection, &mut action);
+            if let Some(pending) = &state.pending {
+                if pending.context.is_some() {
+                    message(ui, tl!("You"), &pending.instruction, true);
+                }
+                ui.horizontal(|ui| {
+                    ui.spinner();
+                    ui.label(tl!("Claude is processing…"));
+                    if ui.button(tl!("Cancel")).clicked() {
+                        action = Some(("assistant.cancel", json!({})));
+                    }
+                });
+            }
+        });
+    });
     if escape {
-        open = false;
-    }
-    if !open {
         let _ = command(app, "ui.assistant", &json!({"value":false}));
     }
     if let Some((id, params)) = action {
@@ -638,7 +675,10 @@ pub fn show(app: &mut WordApp, ctx: &egui::Context) {
             }
         }
         if let Err(error) = result {
-            app.assistant.message = error;
+            app.assistant.message.clone_from(&error);
+            if id == "assistant.auth" {
+                app.assistant.connection_error = Some(error);
+            }
         }
     }
 }
@@ -652,140 +692,100 @@ fn is_draft_submission(state: &State, id: &str, params: &Value) -> bool {
             .is_some_and(|sent| sent == state.instruction || sent == format!("Explain the text and suggest improvements. {}", state.instruction))
 }
 
-/// Connection state, the check button and the official sign-in instructions.
-fn account(ui: &mut egui::Ui, state: &State, action: &mut Action) {
-    let tokens = crate::theme::Tokens::get(ui.ctx());
-    ui.horizontal_wrapped(|ui| {
-        if let Some(texture) = icon_texture(ui.ctx()) {
-            ui.add(egui::Image::new((texture.id(), egui::vec2(26.0, 26.0))).corner_radius(7).alt_text(tl!("Mirai Assistant")));
-        }
-        ui.label(egui::RichText::new(tl!("Claude")).strong().size(17.0).color(tokens.assistant_accent));
-        // The dot repeats the status; the words carry it, so colour is never the only signal.
-        let connected = state.connection.is_some();
-        let (dot, _) = ui.allocate_exact_size(egui::vec2(8.0, 8.0), egui::Sense::hover());
-        ui.painter().circle_filled(dot.center(), 4.0, if connected { tokens.green } else { tokens.assistant_muted });
-        ui.label(
-            egui::RichText::new(if connected { tl!("Connected with Claude account") } else { tl!("Disconnected / authentication required") })
-                .small()
-                .color(tokens.assistant_muted),
-        );
-    });
-    ui.collapsing(tl!("Sign in or change account"), |ui| {
-        if ui.add_enabled(state.pending.is_none(), egui::Button::new(tl!("Check connection"))).clicked() {
-            *action = Some(("assistant.auth", json!({})));
-        }
-        ui.small(tl!("Uses official Claude Code with your account/OAuth. No API keys or fallback providers."));
-        ui.label(tl!(
-            "Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again."
-        ));
-        ui.hyperlink_to(tl!("Official authentication instructions"), "https://code.claude.com/docs/en/authentication");
-    });
-    if !state.message.is_empty() {
-        ui.label(&state.message);
-    }
-}
-
-/// A rounded quick-action chip in the design system's lilac.
-fn chip(ui: &mut egui::Ui, label: &str) -> egui::Response {
-    let tokens = crate::theme::Tokens::get(ui.ctx());
-    ui.add(
-        egui::Button::new(egui::RichText::new(label).color(tokens.assistant_accent))
-            .fill(tokens.assistant_bubble)
-            .stroke(egui::Stroke::new(1.0, tokens.assistant_border))
-            .corner_radius(14)
-            .min_size(egui::vec2(0.0, 28.0)),
-    )
-}
-
-/// Quick actions, the draft, model and send, then consent and the less used options. The
-/// one-click actions sit right above the draft so they stay in reach as the conversation grows.
-fn request(ui: &mut egui::Ui, state: &mut State, field_height: f32, action: &mut Action) {
-    let tokens = crate::theme::Tokens::get(ui.ctx());
-    ui.add_enabled_ui(may_send(state), |ui| {
-        ui.horizontal_wrapped(|ui| {
-            ui.spacing_mut().item_spacing = egui::vec2(6.0, 6.0);
-            for (label, instruction) in [
-                ("Improve writing", "Improve the writing, preserving its meaning and language."),
-                ("Make concise", "Make this text more concise, preserving its meaning and language."),
-                ("Correct spelling and grammar", "Correct spelling and grammar only, preserving the language and meaning."),
-            ] {
-                if chip(ui, tl!(label)).clicked() {
-                    *action = Some(("assistant.suggest", request_params(state, instruction, false)));
-                }
+fn update_ime_composition(state: &mut State, events: &[egui::Event]) -> bool {
+    let mut saw_ime_event = false;
+    for event in events {
+        if let egui::Event::Ime(ime) = event {
+            saw_ime_event = true;
+            match ime {
+                egui::ImeEvent::Preedit { text, .. } => state.ime_composing = !text.is_empty(),
+                egui::ImeEvent::Commit(_) => state.ime_composing = false,
+                _ => {}
             }
-            if chip(ui, tl!("Explain / suggest improvements")).clicked() {
-                let instruction = format!("Explain the text and suggest improvements. {}", state.instruction);
-                *action = Some(("assistant.suggest", request_params(state, &instruction, true)));
+        }
+    }
+    saw_ime_event
+}
+
+fn should_send_on_enter(modifiers: egui::Modifiers, composing: bool, ime_event: bool) -> bool {
+    !composing && !ime_event && !modifiers.shift && !modifiers.alt
+}
+
+/// Header status is intentionally textual as well as coloured.
+fn header(ui: &mut egui::Ui, state: &State, action: &mut Action) {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
+    ui.horizontal(|ui| {
+        egui::Frame::new()
+            .fill(tokens.assistant_brand_bubble)
+            .corner_radius(14)
+            .inner_margin(egui::Margin::symmetric(11, 4))
+            .show(ui, |ui| {
+                if let Some(texture) = logo_texture(ui.ctx()) {
+                    ui.add(egui::Image::from_texture(&texture).alt_text("Mirai").max_height(64.0));
+                } else {
+                    ui.label(egui::RichText::new(tl!("Mirai")).strong().italics().size(17.0).color(tokens.assistant_wordmark));
+                }
+            })
+            .response
+            .on_hover_text(tl!("Claude Code · consult the current document without applying changes automatically"));
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
+            if ui.add(egui::Button::new("×").frame(false).small()).on_hover_text(tl!("Close")).clicked() {
+                *action = Some(("ui.assistant", json!({"value":false})));
             }
         });
     });
-    ui.add_space(8.0);
-    let can_send = may_send(state) && !state.instruction.trim().is_empty();
-    let field_id = egui::Id::new("assistant-instruction");
-    // Ctrl/Cmd+Enter sends from the draft; plain Enter keeps adding lines. Taken before the
-    // field sees it, so the shortcut never inserts a line break.
-    let shortcut = egui::KeyboardShortcut::new(egui::Modifiers::COMMAND, egui::Key::Enter);
-    if can_send && ui.memory(|m| m.has_focus(field_id)) && ui.input_mut(|i| i.consume_shortcut(&shortcut)) {
-        *action = Some(("assistant.suggest", request_params(state, &state.instruction, false)));
-    }
+    ui.horizontal(|ui| {
+        status_badge(ui, state.connection.is_some());
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let new_conversation = egui::Button::new(egui::RichText::new(tl!("New conversation")).small().color(tokens.assistant_muted)).frame(false);
+            if ui.add_enabled(state.pending.is_none(), new_conversation).clicked() {
+                *action = Some(("ui.assistant.newConversation", json!({})));
+            }
+        });
+    });
+}
+
+fn status_badge(ui: &mut egui::Ui, connected: bool) {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
+    let color = if connected { tokens.green } else { tokens.assistant_error };
+    ui.horizontal(|ui| {
+        let (dot, _) = ui.allocate_exact_size(egui::vec2(6.0, 6.0), egui::Sense::hover());
+        ui.painter().circle_filled(dot.center(), 3.0, color);
+        ui.label(egui::RichText::new(if connected { tl!("Connected") } else { tl!("Disconnected") }).small().color(tokens.assistant_muted))
+            .on_hover_text(if connected { tl!("Connected with Claude account") } else { tl!("Disconnected / authentication required") });
+    });
+}
+
+fn context_note(ui: &mut egui::Ui) {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
+    egui::Frame::new().fill(tokens.assistant_surface).corner_radius(7).inner_margin(egui::Margin::symmetric(8, 6)).show(ui, |ui| {
+        ui.horizontal_wrapped(|ui| {
+            ui.label(egui::RichText::new("↳").strong().color(tokens.assistant_info));
+            ui.label(egui::RichText::new(tl!("Reads a copy of the open document to answer. It does not modify your text.")).small());
+        });
+    });
+}
+
+fn error_card(ui: &mut egui::Ui, error: &str, connection_error: bool, action: &mut Action) {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
     egui::Frame::new()
         .fill(tokens.assistant_surface)
-        .stroke(egui::Stroke::new(1.0, tokens.assistant_border))
-        .corner_radius(16)
-        .inner_margin(egui::Margin { left: 14, right: 10, top: 12, bottom: 10 })
+        .stroke(egui::Stroke::new(1.0, tokens.assistant_error))
+        .corner_radius(7)
+        .inner_margin(egui::Margin::symmetric(9, 8))
         .show(ui, |ui| {
-            let field = egui::ScrollArea::vertical()
-                .id_salt("assistant-draft")
-                .max_height(field_height)
-                .show(ui, |ui| {
-                    ui.add(
-                        egui::TextEdit::multiline(&mut state.instruction)
-                            .id(field_id)
-                            .hint_text(tl!("Write a message to improve your text…"))
-                            .font(egui::FontId::proportional(15.0))
-                            .char_limit(4096)
-                            .frame(egui::Frame::NONE)
-                            .min_size(egui::vec2(0.0, field_height))
-                            .desired_width(f32::INFINITY),
-                    )
-                })
-                .inner;
-            if std::mem::take(&mut state.focus) {
-                field.request_focus();
+            ui.label(egui::RichText::new(error).color(tokens.text));
+            if connection_error && ui.button(tl!("Check connection")).clicked() {
+                *action = Some(("assistant.auth", json!({})));
             }
-            ui.add_space(6.0);
-            ui.horizontal(|ui| {
-                let model_label = ui.label(egui::RichText::new(tl!("Model")).color(tokens.assistant_muted));
-                egui::ComboBox::from_id_salt("assistant-model")
-                    .selected_text(if state.model.is_empty() { tl!("Claude Code default") } else { state.model.as_str() })
-                    .width(150.0)
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut state.model, String::new(), tl!("Claude Code default"));
-                        for (alias, label) in [("sonnet", "Sonnet"), ("opus", "Opus"), ("haiku", "Haiku")] {
-                            ui.selectable_value(&mut state.model, alias.into(), tl!(label));
-                        }
-                    })
-                    .response
-                    .labelled_by(model_label.id);
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    let send = egui::Button::new(egui::RichText::new(tl!("Send message")).strong().color(tokens.assistant_on_button))
-                        .fill(tokens.assistant_button)
-                        .corner_radius(7)
-                        .min_size(egui::vec2(0.0, 32.0));
-                    let hint = format!("{} ({})", tl!("Send message"), ui.ctx().format_shortcut(&shortcut));
-                    if ui.add_enabled(can_send, send).on_hover_text(hint).clicked() {
-                        *action = Some(("assistant.suggest", request_params(state, &state.instruction, false)));
-                    }
-                });
-            });
         });
-    ui.add_space(4.0);
-    // Always visible, including for an automatic scope covering a one-paragraph document.
-    // Consent remains per request; opening options or typing never grants it.
-    ui.checkbox(&mut state.confirmed, tl!("I approve sending the whole document for this request"));
-    ui.collapsing(tl!("Writing options"), |ui| {
-        egui::ScrollArea::vertical().id_salt("assistant-options").max_height(180.0).show(ui, |ui| {
-            ui.horizontal(|ui| {
+}
+
+fn writing_options(ui: &mut egui::Ui, state: &mut State, has_text_selection: bool, action: &mut Action) {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
+    ui.collapsing(egui::RichText::new(tl!("Writing options")).small().color(tokens.assistant_muted), |ui| {
+        egui::ScrollArea::vertical().id_salt("assistant-options").max_height(240.0).show(ui, |ui| {
+            ui.horizontal_wrapped(|ui| {
                 ui.label(tl!("Scope"));
                 egui::ComboBox::from_id_salt("assistant-scope").selected_text(scope_label(&state.scope)).show_ui(ui, |ui| {
                     for scope in ["auto", "selection", "paragraph", "section", "document"] {
@@ -795,44 +795,188 @@ fn request(ui: &mut egui::Ui, state: &mut State, field_height: f32, action: &mut
                     }
                 });
             });
-            ui.small(tl!("Automatic: selected text, or the current paragraph when nothing is selected."));
-            ui.horizontal(|ui| {
-                ui.label(tl!("Model"));
-                ui.add(egui::TextEdit::singleline(&mut state.model).hint_text(tl!("Claude Code default")).char_limit(64).desired_width(180.0));
+            ui.small(tl!("Automatic: selected text, or the whole document when nothing is selected (approval required)."));
+            ui.horizontal_wrapped(|ui| {
+                let model_label = ui.label(tl!("Model"));
+                egui::ComboBox::from_id_salt("assistant-model")
+                    .selected_text(if state.model.is_empty() { tl!("Claude Code default") } else { state.model.as_str() })
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut state.model, String::new(), tl!("Claude Code default"));
+                        for (alias, label) in [("sonnet", "Sonnet"), ("opus", "Opus"), ("haiku", "Haiku")] {
+                            ui.selectable_value(&mut state.model, alias.into(), tl!(label));
+                        }
+                    })
+                    .response
+                    .labelled_by(model_label.id);
             });
+            ui.add(
+                egui::TextEdit::singleline(&mut state.model).hint_text(tl!("Custom model alias or id")).char_limit(64).desired_width(f32::INFINITY),
+            );
             if ui.checkbox(&mut state.include_document, tl!("Include the whole document as context")).changed() {
                 state.confirmed = false;
             }
-            ui.add_enabled_ui(may_send(state), |ui| {
+            ui.add_enabled_ui(may_send(state, has_text_selection), |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    // The everyday actions are chips above the draft; these are the rarer ones.
                     for (label, instruction) in [
                         ("More formal", "Rewrite in a more formal tone, preserving its language."),
                         ("More informal", "Rewrite in a more informal tone, preserving its language."),
                         ("Summarize", "Summarize concisely in the same language. Keep the response mapped to the supplied paragraph indices."),
                     ] {
                         if chip(ui, tl!(label)).clicked() {
-                            *action = Some(("assistant.suggest", request_params(state, instruction, false)));
+                            state.instruction = instruction.into();
+                            state.focus = true;
                         }
                     }
                 });
-                ui.horizontal(|ui| {
+                ui.horizontal_wrapped(|ui| {
                     ui.label(tl!("Tone"));
-                    ui.add(egui::TextEdit::singleline(&mut state.tone).char_limit(128).desired_width(180.0));
+                    ui.add(egui::TextEdit::singleline(&mut state.tone).char_limit(128).desired_width(120.0));
                     if ui.add_enabled(!state.tone.trim().is_empty(), egui::Button::new(tl!("Rewrite tone"))).clicked() {
                         *action = Some(("assistant.suggest", request_params(state, &format!("Rewrite in this tone: {}", state.tone), false)));
                     }
                 });
-                ui.horizontal(|ui| {
+                ui.horizontal_wrapped(|ui| {
                     ui.label(tl!("Language"));
-                    ui.add(egui::TextEdit::singleline(&mut state.language).char_limit(128).desired_width(180.0));
+                    ui.add(egui::TextEdit::singleline(&mut state.language).char_limit(128).desired_width(120.0));
                     if ui.add_enabled(!state.language.trim().is_empty(), egui::Button::new(tl!("Translate"))).clicked() {
                         *action = Some(("assistant.suggest", request_params(state, &format!("Translate into {}", state.language), false)));
                     }
                 });
             });
+            ui.separator();
+            if ui.add_enabled(state.pending.is_none(), egui::Button::new(tl!("Check connection"))).clicked() {
+                *action = Some(("assistant.auth", json!({})));
+            }
+            ui.small(tl!("Uses official Claude Code with your account/OAuth. No API keys or fallback providers."));
+            ui.hyperlink_to(tl!("Official authentication instructions"), "https://code.claude.com/docs/en/authentication");
         });
     });
+}
+
+fn set_prompt(state: &mut State, prompt: &str) {
+    state.instruction = prompt.to_owned();
+    state.focus = true;
+}
+
+fn sparkle_tile(ui: &mut egui::Ui) {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
+    egui::Frame::new().fill(tokens.assistant_bubble).corner_radius(9).inner_margin(egui::Margin::same(8)).show(ui, |ui| {
+        let (rect, _) = ui.allocate_exact_size(egui::vec2(24.0, 24.0), egui::Sense::hover());
+        let center = rect.center();
+        let r = 9.0;
+        let inner = 1.7;
+        let points = vec![
+            center + egui::vec2(0.0, -r),
+            center + egui::vec2(inner, -inner),
+            center + egui::vec2(r, 0.0),
+            center + egui::vec2(inner, inner),
+            center + egui::vec2(0.0, r),
+            center + egui::vec2(-inner, inner),
+            center + egui::vec2(-r, 0.0),
+            center + egui::vec2(-inner, -inner),
+        ];
+        ui.painter().add(egui::Shape::convex_polygon(points, tokens.assistant_pink, egui::Stroke::NONE));
+        let small = center + egui::vec2(8.0, -7.0);
+        let sparkle = vec![
+            small + egui::vec2(0.0, -2.5),
+            small + egui::vec2(0.6, -0.6),
+            small + egui::vec2(2.5, 0.0),
+            small + egui::vec2(0.6, 0.6),
+            small + egui::vec2(0.0, 2.5),
+            small + egui::vec2(-0.6, 0.6),
+            small + egui::vec2(-2.5, 0.0),
+            small + egui::vec2(-0.6, -0.6),
+        ];
+        ui.painter().add(egui::Shape::convex_polygon(sparkle, tokens.assistant_pink, egui::Stroke::NONE));
+    });
+}
+
+fn welcome(ui: &mut egui::Ui, state: &mut State) {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
+    ui.add_space(14.0);
+    sparkle_tile(ui);
+    ui.add_space(8.0);
+    ui.label(egui::RichText::new(tl!("How can I help with your document?")).strong().size(16.0).color(tokens.text));
+    ui.label(egui::RichText::new(tl!("Choose an idea to start or write your own question.")).small().color(tokens.assistant_muted));
+    ui.add_space(4.0);
+    ui.horizontal_wrapped(|ui| {
+        for (label, prompt) in [
+            ("Summarize main ideas", "Summarize the document's main ideas."),
+            ("Review clarity", "Review the document's clarity and point out parts that could be expressed more clearly."),
+            ("Suggest next steps", "Suggest concrete next steps based on this document."),
+        ] {
+            if chip(ui, tl!(label)).clicked() {
+                set_prompt(state, tl!(prompt));
+            }
+        }
+    });
+}
+
+/// The compact fixed composer, with explicit whole-document consent kept visible.
+fn request(ui: &mut egui::Ui, state: &mut State, has_text_selection: bool, ime_event_this_frame: bool, action: &mut Action) {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
+    let can_send = may_send(state, has_text_selection) && !state.instruction.trim().is_empty();
+    let field_id = egui::Id::new("assistant-instruction");
+    let sends_enter = can_send
+        && ui.memory(|memory| memory.has_focus(field_id))
+        && ui.input_mut(|input| {
+            let modifiers = input.modifiers;
+            input.key_pressed(egui::Key::Enter)
+                && should_send_on_enter(modifiers, state.ime_composing, ime_event_this_frame)
+                && input.consume_key(modifiers, egui::Key::Enter)
+        });
+    if can_send && sends_enter {
+        *action = Some(("assistant.suggest", request_params(state, &state.instruction, false)));
+    }
+    egui::Frame::new()
+        .fill(tokens.assistant_surface)
+        .stroke(egui::Stroke::new(1.0, tokens.assistant_border))
+        .corner_radius(10)
+        .inner_margin(egui::Margin::symmetric(9, 8))
+        .show(ui, |ui| {
+            let field = egui::ScrollArea::vertical()
+                .id_salt("assistant-draft")
+                .max_height(74.0)
+                .show(ui, |ui| {
+                    ui.add(
+                        egui::TextEdit::multiline(&mut state.instruction)
+                            .id(field_id)
+                            .hint_text(tl!("Ask about your document…"))
+                            .font(egui::FontId::proportional(14.0))
+                            .char_limit(4096)
+                            .frame(egui::Frame::NONE)
+                            .min_size(egui::vec2(0.0, 58.0))
+                            .desired_width(f32::INFINITY),
+                    )
+                })
+                .inner;
+            if std::mem::take(&mut state.focus) {
+                field.request_focus();
+            }
+            ui.add_space(4.0);
+            ui.label(egui::RichText::new(tl!("Press Enter to send · Shift+Enter for a new line")).small().color(tokens.assistant_muted));
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let send = egui::Button::new(egui::RichText::new(tl!("Send")).strong().color(tokens.assistant_on_button))
+                    .fill(tokens.assistant_button)
+                    .corner_radius(6)
+                    .min_size(egui::vec2(62.0, 30.0));
+                if ui.add_enabled(can_send, send).clicked() {
+                    *action = Some(("assistant.suggest", request_params(state, &state.instruction, false)));
+                }
+            });
+        });
+}
+
+/// A rounded quick-action chip in the fork's assistant palette.
+fn chip(ui: &mut egui::Ui, label: &str) -> egui::Response {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
+    ui.add(
+        egui::Button::new(egui::RichText::new(label).small().color(tokens.assistant_accent))
+            .fill(tokens.assistant_background)
+            .stroke(egui::Stroke::new(1.0, tokens.assistant_accent))
+            .corner_radius(13)
+            .min_size(egui::vec2(0.0, 27.0)),
+    )
 }
 
 /// Role labels keep the conversation understandable without depending on bubble colour.
@@ -853,27 +997,17 @@ fn message(ui: &mut egui::Ui, role: &str, text: &str, user: bool) {
 }
 
 /// Whether the chosen scope may be sent: anything but the whole document, unless approved.
-fn may_send(state: &State) -> bool {
-    (state.scope != "document" && !state.include_document) || state.confirmed
+fn may_send(state: &State, has_text_selection: bool) -> bool {
+    let scope_is_whole_document = state.scope == "document" || (state.scope == "auto" && !has_text_selection);
+    (!scope_is_whole_document && !state.include_document) || state.confirmed
 }
 
 /// The proposals, oldest first, each with its diffs and buttons. `live` is the open document's
 /// identity and revision: a proposal read at another one can't be applied.
-fn history(ui: &mut egui::Ui, state: &State, live: (u64, u64), action: &mut Action) {
+fn history(ui: &mut egui::Ui, state: &mut State, live: (u64, u64), has_text_selection: bool, action: &mut Action) {
     let busy = state.pending.is_some();
     if !state.history.iter().any(|p| !p.dismissed) && !busy {
-        // A quiet welcome centred in the free space; the actions themselves sit by the draft.
-        let tokens = crate::theme::Tokens::get(ui.ctx());
-        ui.add_space(((ui.available_height() - 130.0) * 0.5).clamp(8.0, 120.0));
-        ui.vertical_centered(|ui| {
-            if let Some(texture) = icon_texture(ui.ctx()) {
-                ui.add(egui::Image::new((texture.id(), egui::vec2(52.0, 52.0))).corner_radius(14).alt_text(tl!("Mirai Assistant")));
-            }
-            ui.add_space(10.0);
-            ui.label(egui::RichText::new(tl!("Start with your text")).size(22.0).color(tokens.assistant_accent));
-            ui.add_space(2.0);
-            ui.label(egui::RichText::new(tl!("Choose an action or describe what you would like to change.")).color(tokens.assistant_muted));
-        });
+        welcome(ui, state);
     }
     for proposal in state.history.iter().rev().filter(|p| !p.dismissed) {
         ui.push_id(proposal.id, |ui| {
@@ -881,44 +1015,45 @@ fn history(ui: &mut egui::Ui, state: &State, live: (u64, u64), action: &mut Acti
             if !proposal.response.explanation.is_empty() {
                 message(ui, tl!("Claude"), &proposal.response.explanation, false);
             }
-            ui.strong(tl!("Review changes"));
-            ui.strong(format!("{} #{}", tl!("Proposal"), proposal.id));
-            let same_doc = proposal.context.get("document_id").and_then(Value::as_u64) == Some(live.0);
-            let fresh = same_doc && proposal.context.get("revision").and_then(Value::as_u64) == Some(live.1);
-            if !fresh {
-                ui.label(tl!("The document changed. Regenerate before applying this proposal."));
-            }
-            for suggestion in &proposal.response.suggestions {
-                let original = proposal.originals.get(suggestion.index).map(String::as_str).unwrap_or("");
-                draw_diff(ui, original, &suggestion.text);
-                ui.horizontal(|ui| {
-                    let applied = proposal.applied.contains(&suggestion.index);
-                    if ui.add_enabled(fresh && !applied && !busy, egui::Button::new(tl!("Apply"))).clicked() {
-                        *action = Some(("assistant.accept", json!({"id":proposal.id,"index":suggestion.index})));
+            ui.collapsing(tl!("Review changes"), |ui| {
+                ui.strong(format!("{} #{}", tl!("Proposal"), proposal.id));
+                let same_doc = proposal.context.get("document_id").and_then(Value::as_u64) == Some(live.0);
+                let fresh = same_doc && proposal.context.get("revision").and_then(Value::as_u64) == Some(live.1);
+                if !fresh {
+                    ui.label(tl!("The document changed. Regenerate before applying this proposal."));
+                }
+                for suggestion in &proposal.response.suggestions {
+                    let original = proposal.originals.get(suggestion.index).map(String::as_str).unwrap_or("");
+                    draw_diff(ui, original, &suggestion.text);
+                    ui.horizontal(|ui| {
+                        let applied = proposal.applied.contains(&suggestion.index);
+                        if ui.add_enabled(fresh && !applied && !busy, egui::Button::new(tl!("Apply"))).clicked() {
+                            *action = Some(("assistant.accept", json!({"id":proposal.id,"index":suggestion.index})));
+                        }
+                        if applied {
+                            ui.label(tl!("Applied"));
+                        }
+                        if ui.button(tl!("Copy")).clicked() {
+                            ui.ctx().copy_text(suggestion.text.clone());
+                        }
+                    });
+                }
+                ui.horizontal_wrapped(|ui| {
+                    let pending = proposal.response.suggestions.iter().any(|s| !proposal.applied.contains(&s.index));
+                    if ui.add_enabled(fresh && pending && !busy, egui::Button::new(tl!("Apply all"))).clicked() {
+                        *action = Some(("assistant.accept", json!({"id":proposal.id})));
                     }
-                    if applied {
-                        ui.label(tl!("Applied"));
+                    if ui.button(crate::i18n::tc("assistant", "Discard")).clicked() {
+                        *action = Some(("assistant.discard", json!({"id":proposal.id})));
                     }
-                    if ui.button(tl!("Copy")).clicked() {
-                        ui.ctx().copy_text(suggestion.text.clone());
+                    if ui.add_enabled(!busy && may_send(state, has_text_selection), egui::Button::new(tl!("Regenerate"))).clicked() {
+                        *action = Some(("assistant.suggest", request_params(state, &proposal.instruction, proposal.explain_only)));
+                    }
+                    let can_undo = same_doc && proposal.undo_revision == Some(live.1);
+                    if ui.add_enabled(can_undo, egui::Button::new(tl!("Undo last application"))).clicked() {
+                        *action = Some(("edit.undo", json!({})));
                     }
                 });
-            }
-            ui.horizontal_wrapped(|ui| {
-                let pending = proposal.response.suggestions.iter().any(|s| !proposal.applied.contains(&s.index));
-                if ui.add_enabled(fresh && pending && !busy, egui::Button::new(tl!("Apply all"))).clicked() {
-                    *action = Some(("assistant.accept", json!({"id":proposal.id})));
-                }
-                if ui.button(crate::i18n::tc("assistant", "Discard")).clicked() {
-                    *action = Some(("assistant.discard", json!({"id":proposal.id})));
-                }
-                if ui.add_enabled(!busy && may_send(state), egui::Button::new(tl!("Regenerate"))).clicked() {
-                    *action = Some(("assistant.suggest", request_params(state, &proposal.instruction, proposal.explain_only)));
-                }
-                let can_undo = same_doc && proposal.undo_revision == Some(live.1);
-                if ui.add_enabled(can_undo, egui::Button::new(tl!("Undo last application"))).clicked() {
-                    *action = Some(("edit.undo", json!({})));
-                }
             });
             ui.separator();
         });
@@ -1111,6 +1246,8 @@ mod tests {
             app,
         );
         harness.run_steps(6);
+        harness.get_by_label("Review changes").click();
+        harness.run_steps(2);
         assert!(harness.query_by_label("Original").is_some());
         assert!(harness.query_by_label("Suggested").is_some());
         harness.get_by_label("Apply").click();
@@ -1194,7 +1331,7 @@ mod tests {
     }
 
     #[test]
-    fn conversation_shows_composer_and_model_menu_without_sending() {
+    fn docked_panel_keeps_composer_and_options_available_without_sending() {
         use egui_kittest::kittest::Queryable;
         let mut app = reviewed_app();
         app.assistant.model.clear();
@@ -1208,10 +1345,14 @@ mod tests {
         );
         h.run_steps(6);
         assert!(h.query_by_label("You").is_some());
-        // The user's message in the conversation, and the quick action chip above the draft.
-        assert_eq!(h.query_all_by_label("Make concise").count(), 2);
-        assert!(h.query_by_role_and_label(egui::accesskit::Role::Button, "Make concise").is_some());
-        assert!(h.query_by_label("Send message").is_some());
+        assert!(h.query_by_label("Mirai").is_some());
+        assert!(h.query_by_label("Claude Code · consult the current document without applying changes automatically").is_none());
+        assert!(h.query_by_label("Reads a copy of the open document to answer. It does not modify your text.").is_some());
+        assert!(h.query_by_role_and_label(egui::accesskit::Role::Button, "New conversation").is_some());
+        assert!(h.query_by_label("Press Enter to send · Shift+Enter for a new line").is_some());
+        assert!(h.query_by_role_and_label(egui::accesskit::Role::Button, "Send").is_some());
+        h.get_by_label("Writing options").click();
+        h.run_steps(3);
         h.get_by_role_and_label(egui::accesskit::Role::ComboBox, "Model").click();
         h.run_steps(3);
         h.get_by_label("Haiku").click();
@@ -1224,20 +1365,108 @@ mod tests {
     }
 
     #[test]
+    fn welcome_chips_only_fill_and_focus_the_draft() {
+        use egui_kittest::kittest::Queryable;
+        let mut app = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("Current document.")), Default::default());
+        app.assistant.open = true;
+        let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(900.0, 760.0)).build_ui_state(
+            |ui, app: &mut WordApp| {
+                app.logic(ui.ctx());
+                app.ui(ui);
+            },
+            app,
+        );
+        h.run_steps(5);
+        for label in ["How can I help with your document?", "Summarize main ideas", "Review clarity", "Suggest next steps"] {
+            assert!(h.query_by_label(label).is_some(), "missing {label}");
+        }
+        assert!(h.query_by_label("Check connection").is_none(), "the connection error action is conditional");
+        h.get_by_role_and_label(egui::accesskit::Role::Button, "Review clarity").click();
+        h.run_steps(4);
+        assert_eq!(h.state().assistant.instruction, "Review the document's clarity and point out parts that could be expressed more clearly.");
+        assert!(h.state().assistant.pending.is_none(), "a prompt chip only fills the draft");
+        assert_eq!(h.state().session.doc.plain_text(wordcraft_doc::StoryRef::Body), "Current document.");
+    }
+
+    #[test]
+    fn new_conversation_clears_local_state_but_keeps_auth_and_document() {
+        use egui_kittest::kittest::Queryable;
+        let mut app = reviewed_app();
+        app.assistant.connection = Some(AuthState::Account);
+        app.assistant.connection_error = Some("temporary connection error".into());
+        app.assistant.message = "temporary connection error".into();
+        app.assistant.instruction = "Keep a draft".into();
+        app.assistant.confirmed = true;
+        let document = app.session.doc.plain_text(wordcraft_doc::StoryRef::Body);
+        let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(900.0, 760.0)).build_ui_state(
+            |ui, app: &mut WordApp| {
+                app.logic(ui.ctx());
+                app.ui(ui);
+            },
+            app,
+        );
+        h.run_steps(4);
+        assert!(h.query_by_role_and_label(egui::accesskit::Role::Button, "Check connection").is_some());
+        h.get_by_role_and_label(egui::accesskit::Role::Button, "New conversation").click();
+        h.run_steps(3);
+        assert!(h.state().assistant.instruction.is_empty());
+        assert!(!h.state().assistant.confirmed);
+        assert!(h.state().assistant.history.is_empty());
+        assert!(h.state().assistant.message.is_empty());
+        assert!(h.state().assistant.connection_error.is_none());
+        assert_eq!(h.state().assistant.connection, Some(AuthState::Account));
+        assert_eq!(h.state().session.doc.plain_text(wordcraft_doc::StoryRef::Body), document);
+    }
+
+    #[test]
+    fn new_conversation_is_refused_while_a_request_is_pending() {
+        let mut app = reviewed_app();
+        let (sender, receiver) = std::sync::mpsc::channel();
+        app.assistant.pending =
+            Some(Pending { cancel: Arc::new(AtomicBool::new(false)), receiver, context: None, instruction: String::new(), explain_only: false });
+        assert!(app.execute("ui.assistant.newConversation", json!({})).is_err());
+        assert_eq!(app.assistant.history.len(), 1);
+        assert!(app.assistant.pending.is_some());
+        drop(sender);
+    }
+
+    #[test]
+    fn enter_send_respects_shift_and_ime_composition() {
+        assert!(should_send_on_enter(egui::Modifiers::NONE, false, false));
+        assert!(should_send_on_enter(egui::Modifiers::COMMAND, false, false));
+        assert!(should_send_on_enter(egui::Modifiers::CTRL, false, false));
+        assert!(!should_send_on_enter(egui::Modifiers::SHIFT, false, false));
+        assert!(!should_send_on_enter(egui::Modifiers::NONE, true, false));
+        assert!(!should_send_on_enter(egui::Modifiers::NONE, false, true));
+
+        let mut state = State::default();
+        assert!(update_ime_composition(&mut state, &[egui::Event::Ime(egui::ImeEvent::Preedit { text: "に".into(), active_range_chars: None })]));
+        assert!(state.ime_composing);
+        assert!(!should_send_on_enter(egui::Modifiers::NONE, state.ime_composing, false));
+        assert!(update_ime_composition(&mut state, &[egui::Event::Ime(egui::ImeEvent::Commit("に".into()))]));
+        assert!(!state.ime_composing);
+    }
+
+    #[test]
     fn composer_preserves_explicit_consent_and_custom_model() {
         let mut app = reviewed_app();
         let state = &mut app.assistant;
         state.model = "claude-custom-model".into();
         state.scope = "document".into();
-        assert!(!may_send(state));
+        assert!(!may_send(state, true));
         assert_eq!(request_params(state, "Improve", false)["confirm_document"], false);
         state.confirmed = true;
-        assert!(may_send(state));
+        assert!(may_send(state, true));
         assert_eq!(request_params(state, "Improve", false)["model"], "claude-custom-model");
         state.confirmed = false;
         state.scope = "auto".into();
         state.include_document = true;
-        assert!(!may_send(state));
+        assert!(!may_send(state, true));
+        state.include_document = false;
+        assert!(!may_send(state, false), "auto without a selection now includes the whole body");
+        state.confirmed = true;
+        assert!(may_send(state, false), "the visible consent explicitly unlocks the request");
+        assert!(may_send(state, true), "auto with a text selection remains scoped to that selection");
     }
 
     #[test]
@@ -1249,6 +1478,27 @@ mod tests {
         let second = icon_texture(&ctx).unwrap();
         assert_eq!(first.id(), second.id());
         assert_eq!(first.size(), [256, 256]);
+    }
+
+    #[test]
+    fn mirai_logo_is_embedded_and_reuses_one_texture() {
+        let image = image::load_from_memory(include_bytes!("../../../assets/assistant/Logo.png.png")).unwrap();
+        assert_eq!((image.width(), image.height()), (1774, 887));
+        let ctx = egui::Context::default();
+        let first = logo_texture(&ctx).unwrap();
+        let second = logo_texture(&ctx).unwrap();
+        assert_eq!(first.id(), second.id());
+        assert_eq!(first.size(), [256, 128]);
+    }
+
+    #[test]
+    fn mirai_wordmark_uses_the_same_dark_cyan_capsule_in_both_themes() {
+        let light = crate::theme::Tokens::light();
+        let dark = crate::theme::Tokens::dark();
+        assert_eq!(light.assistant_brand_bubble, dark.assistant_brand_bubble);
+        assert_eq!(light.assistant_wordmark, dark.assistant_wordmark);
+        assert_eq!(dark.assistant_brand_bubble, egui::Color32::from_rgb(0x12, 0x38, 0x3F));
+        assert_eq!(dark.assistant_wordmark, egui::Color32::from_rgb(0xD7, 0xC8, 0xFF));
     }
 
     #[test]

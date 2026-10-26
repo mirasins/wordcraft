@@ -2444,12 +2444,14 @@ impl WordApp {
             backstage::forget_save_as_error(&ctx);
         }
         if self.ui.backstage {
+            assistant::show(self, ui, &ctx);
             backstage::show(self, ui);
         } else if !self.has_document() {
             // No document open (#1129): the ribbon greyed out but for Help, and no page.
             chrome::title_bar(self, ui);
             ribbon::show(self, ui);
             chrome::status_bar(self, ui);
+            assistant::show(self, ui, &ctx);
             egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.canvas)).show(ui, |_| {});
         } else {
             let screen = chrome::Screen::of(&self.session.view);
@@ -2463,6 +2465,7 @@ impl WordApp {
                 chrome::status_bar(self, ui);
                 panes::show(self, ui);
             }
+            assistant::show(self, ui, &ctx);
             let fill = if screen == chrome::Screen::Focus { chrome::FOCUS_CANVAS } else { t.canvas };
             egui::CentralPanel::default().frame(egui::Frame::NONE.fill(fill)).show(ui, |ui| {
                 canvas::show(self, ui);
@@ -2473,7 +2476,6 @@ impl WordApp {
         }
         content_controls::popup(self, &ctx);
         dialogs::show(self, &ctx);
-        assistant::show(self, &ctx);
         #[cfg(not(target_arch = "wasm32"))]
         file_browser::show(self, &ctx);
         colors::show(self, &ctx);

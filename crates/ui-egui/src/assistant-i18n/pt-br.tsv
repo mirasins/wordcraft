@@ -13,7 +13,7 @@
 	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Instale o Claude Code e execute `claude auth login` no seu terminal. Para trocar de conta, use o fluxo oficial de logout/login e verifique a conexão novamente.
 	Official authentication instructions	Instruções oficiais de autenticação
 	Scope	Escopo
-	Automatic: selected text, or the current paragraph when nothing is selected.	Automático: texto selecionado ou o parágrafo atual quando nada estiver selecionado.
+	Automatic: selected text, or the whole document when nothing is selected (approval required).	Automático: texto selecionado ou o documento inteiro quando nada estiver selecionado (requer aprovação).
 	Include the whole document as context	Incluir o documento inteiro como contexto
 	I approve sending the whole document for this request	Aprovo o envio do documento inteiro para esta solicitação
 	What would you like to do with this text?	O que você deseja fazer com este texto?

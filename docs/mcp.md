@@ -130,9 +130,10 @@ The acceptance test `crates/mcp/src/tests.rs` writes a formatted document using 
 `assistant_context` returns what the assistant would work on (document id, revision, scope and
 target paragraphs with their text). It is local only. `assistant_suggest` sends the instruction and
 the target text to your Claude Code account and does not change the document. It needs
-`confirm_document: true` where the scope covers the whole body, and `include_document_context`
-needs it too. `assistant_apply` takes the `context` and `changes` `[{index, text}]` and applies
-them as one undoable edit; a stale context is refused.
+`auto` uses selected text, or every body paragraph when there is no text selection. `confirm_document:
+true` is required where the scope covers the whole body (including `auto` without a selection), and
+`include_document_context` needs it too. `assistant_apply` takes the `context` and `changes`
+`[{index, text}]` and applies them as one undoable edit; a stale context is refused.
 
 Headless (`wordcraft-cli mcp`): `assistant_suggest` runs the local `claude` synchronously and
 returns `{context, suggestions, explanation}`. Remote (`--connect`): the app starts the request and

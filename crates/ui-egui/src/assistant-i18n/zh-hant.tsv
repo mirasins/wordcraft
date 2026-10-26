@@ -13,7 +13,7 @@
 	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	安裝 Claude Code，然後在終端機中執行 `claude auth login`。若要變更帳戶，請使用其官方登出/登入流程，然後重新檢查連線。
 	Official authentication instructions	官方驗證說明
 	Scope	範圍
-	Automatic: selected text, or the current paragraph when nothing is selected.	自動：所選文字；未選取任何內容時為目前段落。
+	Automatic: selected text, or the whole document when nothing is selected (approval required).	自動：所選文字；未選取任何內容時為整份文件（需要確認）。
 	Include the whole document as context	將整份文件納入為內容脈絡
 	I approve sending the whole document for this request	我同意為此請求傳送整份文件
 	What would you like to do with this text?	您想如何處理這段文字？

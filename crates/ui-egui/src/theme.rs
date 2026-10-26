@@ -253,8 +253,7 @@ pub struct Tokens {
     pub accent_text: Color32,
     /// Text/icon colour drawn on top of `accent` (e.g. keytip badge letters).
     pub on_accent: Color32,
-    /// The writing conversation's palette, from the owner's "Ps. Iván Oda" design system
-    /// (`wash`/`paper`/`card-lilac`/`purple`/`button`/`muted`; dark derives from `ink`).
+    /// Mirai assistant palette; each theme keeps its own contrast-safe surface and text.
     pub assistant_background: Color32,
     /// The composer and Claude's replies sit on it.
     pub assistant_surface: Color32,
@@ -262,6 +261,13 @@ pub struct Tokens {
     pub assistant_accent: Color32,
     pub assistant_border: Color32,
     pub assistant_muted: Color32,
+    pub assistant_pink: Color32,
+    pub assistant_info: Color32,
+    pub assistant_error: Color32,
+    /// The Mirai wordmark remains in its dark cyan capsule in both appearances.
+    pub assistant_brand_bubble: Color32,
+    /// Light lavender lettering for the wordmark capsule.
+    pub assistant_wordmark: Color32,
     /// The primary (send) button and the text on it.
     pub assistant_button: Color32,
     pub assistant_on_button: Color32,
@@ -340,6 +346,11 @@ impl Tokens {
             assistant_accent: Color32::from_rgb(0x72, 0x51, 0x7E),
             assistant_border: Color32::from_rgb(0xB9, 0xA4, 0xC1),
             assistant_muted: Color32::from_rgb(0x65, 0x5E, 0x6C),
+            assistant_pink: Color32::from_rgb(0xD2, 0x3C, 0x8A),
+            assistant_info: Color32::from_rgb(0x16, 0x7F, 0x99),
+            assistant_error: Color32::from_rgb(0xC8, 0x3E, 0x5B),
+            assistant_brand_bubble: Color32::from_rgb(0x12, 0x38, 0x3F),
+            assistant_wordmark: Color32::from_rgb(0xD7, 0xC8, 0xFF),
             assistant_button: Color32::from_rgb(0x5D, 0x40, 0x6A),
             assistant_on_button: Color32::WHITE,
             input: Color32::WHITE,
@@ -408,14 +419,19 @@ impl Tokens {
             accent_text: Color32::from_rgb(0x9C, 0xB0, 0xF5),
             // Dark text on the light dark-theme accent: white on #7a93f0 is only 2.9:1 (#655).
             on_accent: Color32::from_rgb(0x11, 0x16, 0x2E),
-            assistant_background: Color32::from_rgb(0x24, 0x1C, 0x2B),
-            assistant_surface: Color32::from_rgb(0x2E, 0x24, 0x36),
-            assistant_bubble: Color32::from_rgb(0x39, 0x2D, 0x42),
-            assistant_accent: Color32::from_rgb(0xD7, 0xA7, 0xC1),
-            assistant_border: Color32::from_rgb(0x6A, 0x58, 0x75),
-            assistant_muted: Color32::from_rgb(0xB9, 0xA4, 0xC1),
-            assistant_button: Color32::from_rgb(0xD7, 0xA7, 0xC1),
-            assistant_on_button: Color32::from_rgb(0x32, 0x15, 0x3F),
+            assistant_background: Color32::from_rgb(0x19, 0x16, 0x22),
+            assistant_surface: Color32::from_rgb(0x20, 0x1B, 0x2D),
+            assistant_bubble: Color32::from_rgb(0x2A, 0x24, 0x38),
+            assistant_accent: Color32::from_rgb(0x98, 0x8B, 0xC7),
+            assistant_border: Color32::from_rgb(0x2F, 0x2A, 0x3E),
+            assistant_muted: Color32::from_rgb(0xA3, 0x9F, 0xBB),
+            assistant_pink: Color32::from_rgb(0xFF, 0x79, 0xC6),
+            assistant_info: Color32::from_rgb(0x78, 0xD1, 0xE1),
+            assistant_error: Color32::from_rgb(0xE9, 0x63, 0x79),
+            assistant_brand_bubble: Color32::from_rgb(0x12, 0x38, 0x3F),
+            assistant_wordmark: Color32::from_rgb(0xD7, 0xC8, 0xFF),
+            assistant_button: Color32::from_rgb(0x98, 0x8B, 0xC7),
+            assistant_on_button: Color32::from_rgb(0x19, 0x16, 0x22),
             input: Color32::from_rgb(0x1E, 0x1E, 0x1E),
             input_border: Color32::from_rgb(0x7A, 0x7A, 0x7A),
             group_label: Color32::from_rgb(0xA0, 0xA0, 0xA0),

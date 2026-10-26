@@ -13,7 +13,7 @@
 	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Installi Claude Code ja käivita seejärel terminalis `claude auth login`. Konto vahetamiseks kasuta ametlikku väljalogimise/sisselogimise protsessi ja kontrolli ühendust uuesti.
 	Official authentication instructions	Ametlikud autentimisjuhised
 	Scope	Ulatus
-	Automatic: selected text, or the current paragraph when nothing is selected.	Automaatne: valitud tekst või praegune lõik, kui midagi pole valitud.
+	Automatic: selected text, or the whole document when nothing is selected (approval required).	Automaatne: valitud tekst või kogu dokument, kui midagi pole valitud (vajab nõusolekut).
 	Include the whole document as context	Kaasa kogu dokument kontekstina
 	I approve sending the whole document for this request	Kiidan heaks kogu dokumendi saatmise selle päringu jaoks
 	What would you like to do with this text?	Mida soovid selle tekstiga teha?

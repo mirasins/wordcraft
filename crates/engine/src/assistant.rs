@@ -155,12 +155,12 @@ impl Collector {
     }
 }
 
-/// Build the context for `cp`. Scopes: `auto` (the selection, else the caret's paragraph),
+/// Build the context for `cp`. Scopes: `auto` (the selection, else the whole body),
 /// `selection`, `paragraph`, `section` (the body section holding the caret) and `document`.
 /// Whole-body coverage by any scope needs `confirm_document`. Errors instead of truncating.
 pub fn context(s: &Session, cp: &ContextParams) -> Result<Context, CmdError> {
     let scope: &str = match cp.scope.as_str() {
-        "auto" if s.sel.is_collapsed() => "paragraph",
+        "auto" if s.sel.is_collapsed() => "document",
         "auto" => "selection",
         "selection" | "paragraph" | "section" | "document" => cp.scope.as_str(),
         other => return Err(refuse(format!("unknown `scope` {other:?}: auto, selection, paragraph, section or document"))),
