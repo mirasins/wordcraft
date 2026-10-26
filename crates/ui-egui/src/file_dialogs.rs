@@ -292,7 +292,11 @@ impl WordApp {
             }
             AfterPick::Export { ext } => {
                 let Some(path) = picked else { return Ok(json!({"cancelled": true})) };
-                let r = if ext == "png" {
+                let r = if ext == "pdf" {
+                    // Use the dedicated exporter: a portal or the built-in browser may
+                    // return a name without an extension. Never save a different format.
+                    self.run("file.exportPdf", json!({"path": path}))
+                } else if ext == "png" {
                     self.run("file.exportPng", json!({"path": path}))
                 } else if ext == crate::print_page::EXPORT_WORD_2003 {
                     self.run("file.saveAs", json!({"path": path, "format": ext}))
@@ -300,7 +304,8 @@ impl WordApp {
                     self.run("file.saveAs", json!({"path": path}))
                 };
                 if r.is_ok() {
-                    self.status(crate::i18n::fmt(tl!("Exported {path}"), &[("path", &path)]));
+                    let exported = r.as_ref().ok().and_then(|v| v.get("path")).and_then(Value::as_str).unwrap_or(&path);
+                    self.status(crate::i18n::fmt(tl!("Exported {path}"), &[("path", exported)]));
                 }
                 r
             }
@@ -389,7 +394,27 @@ impl WordApp {
     /// Ask where to save, save there, then do `after`.
     pub(crate) fn save_as(&mut self, after: AfterSave) -> Asked {
         let name = self.default_save_name();
-        self.ask_file(FileDialogRequest::Save { name, dir: None }, AfterPick::SaveAs { after, document: self.session.document_id() })
+        let dir = self.default_save_dir();
+        self.ask_file(FileDialogRequest::Save { name, dir }, AfterPick::SaveAs { after, document: self.session.document_id() })
+    }
+
+    /// Existing documents stay beside their original; new documents start in Documents.
+    pub(crate) fn default_save_dir(&self) -> Option<String> {
+        self.session
+            .path
+            .as_deref()
+            .and_then(std::path::Path::parent)
+            .filter(|d| d.is_dir())
+            .or_else(|| self.services.documents_dir.as_deref().filter(|d| d.is_dir()))
+            .map(|d| d.to_string_lossy().into_owned())
+    }
+
+    /// File › Save As › Documents: choose a name there, without silently overwriting a file.
+    pub(crate) fn save_in_documents_dialog(&mut self) {
+        let dir = self.services.documents_dir.as_ref().filter(|d| d.is_dir()).map(|d| d.to_string_lossy().into_owned());
+        let name = self.default_save_name();
+        let after = AfterPick::SaveAs { after: AfterSave::Nothing, document: self.session.document_id() };
+        let _ = self.ask_file(FileDialogRequest::Save { name, dir }, after);
     }
 
     /// The user templates folder (#2852): the one File › Options names, else the app's own.
@@ -434,7 +459,8 @@ impl WordApp {
     pub(crate) fn export_dialog(&mut self, ext: &str) {
         let file_ext = if ext == crate::print_page::EXPORT_WORD_2003 { "xml" } else { ext };
         let name = format!("{}.{file_ext}", self.title_stem());
-        let _ = self.ask_file(FileDialogRequest::Save { name, dir: None }, AfterPick::Export { ext: ext.to_string() });
+        let dir = self.default_save_dir();
+        let _ = self.ask_file(FileDialogRequest::Save { name, dir }, AfterPick::Export { ext: ext.to_string() });
     }
 
     /// File › Print › Save these pages as PDF: ask where, then write the pages the print
@@ -442,7 +468,8 @@ impl WordApp {
     pub(crate) fn print_pdf_dialog(&mut self) {
         let name = format!("{}.pdf", self.title_stem());
         let settings = self.ui.print.params();
-        let _ = self.ask_file(FileDialogRequest::Save { name, dir: None }, AfterPick::PrintPdf { settings });
+        let dir = self.default_save_dir();
+        let _ = self.ask_file(FileDialogRequest::Save { name, dir }, AfterPick::PrintPdf { settings });
     }
 
     pub(crate) fn open_dialog(&mut self) {
@@ -493,6 +520,64 @@ mod tests {
 
     const UNSAVED: &str = "My unsaved novel chapter";
 
+    #[test]
+    fn new_document_save_and_exports_start_in_documents() {
+        let dir = scratch("documents-default");
+        let (mut a, shown) = async_app();
+        a.services.documents_dir = Some(dir.clone());
+        for command in ["file.save", "file.saveAs", "file.exportPdf"] {
+            a.run(command, json!({})).unwrap();
+            assert!(matches!(&shown.borrow()[0].0, FileDialogRequest::Save { dir: Some(d), .. } if d == &dir.to_string_lossy()));
+            answer(&shown, None);
+            a.poll_file_dialog();
+        }
+        a.print_pdf_dialog();
+        assert!(matches!(&shown.borrow()[0].0, FileDialogRequest::Save { dir: Some(d), .. } if d == &dir.to_string_lossy()));
+        answer(&shown, None);
+        a.poll_file_dialog();
+        assert!(a.session.path.is_none(), "cancel never assigns a path");
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn existing_document_keeps_its_folder_but_documents_is_an_explicit_option() {
+        let dir = scratch("documents-option");
+        let documents = dir.join("Documentos");
+        std::fs::create_dir(&documents).unwrap();
+        let (mut a, shown) = async_app();
+        a.services.documents_dir = Some(documents.clone());
+        a.session.path = Some(dir.join("original.docx"));
+        a.save_as_dialog();
+        assert!(matches!(&shown.borrow()[0].0, FileDialogRequest::Save { dir: Some(d), .. } if d == &dir.to_string_lossy()));
+        answer(&shown, None);
+        a.poll_file_dialog();
+        a.run("ui.saveInDocuments", json!({})).unwrap();
+        assert!(matches!(&shown.borrow()[0].0, FileDialogRequest::Save { dir: Some(d), .. } if d == &documents.to_string_lossy()));
+        answer(&shown, None);
+        a.poll_file_dialog();
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn pdf_export_without_extension_is_a_copy_not_a_document_save() {
+        let dir = scratch("pdf-copy-no-extension");
+        let (mut a, shown) = async_app();
+        typed(&mut a);
+        let original = dir.join("original.docx");
+        a.session.path = Some(original.clone());
+        let rev = a.session.rev();
+        a.export_dialog("pdf");
+        answer(&shown, Some(&dir.join("copy").to_string_lossy()));
+        a.poll_file_dialog().unwrap().unwrap();
+        assert!(std::fs::read(dir.join("copy.pdf")).unwrap().starts_with(b"%PDF"));
+        assert!(!dir.join("copy").exists());
+        assert_eq!(a.session.path, Some(original));
+        assert_eq!(a.session.rev(), rev);
+        assert!(a.session.dirty, "PDF export does not mark editable work saved");
+        assert!(body_text(&a).contains(UNSAVED));
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+
     /// Original Word 97 compound file: one compressed text piece, built from MS-DOC's FIB/Clx.
     fn legacy_word_bytes() -> Vec<u8> {
         use std::io::{Cursor, Write};
@@ -539,7 +624,7 @@ mod tests {
             let revision = a.session.rev();
             let result = a.run("file.save", json!({})).unwrap();
             assert_eq!(result["pending"], "saveAs");
-            assert_eq!(shown.borrow()[0].0, FileDialogRequest::Save { name: "contract.docx".into(), dir: None });
+            assert_eq!(shown.borrow()[0].0, FileDialogRequest::Save { name: "contract.docx".into(), dir: Some(dir.to_string_lossy().into_owned()) });
             answer(&shown, None);
             assert_eq!(a.poll_file_dialog().unwrap().unwrap()["saved"], false);
             assert_eq!(a.session.doc, draft);
@@ -689,7 +774,7 @@ mod tests {
         h.get_by_label("Save").click();
         h.run_steps(3);
         assert!(h.state().file_dialog_open(), "the Save button asks for a supported target");
-        assert_eq!(shown.borrow()[0].0, FileDialogRequest::Save { name: "contract.docx".into(), dir: None });
+        assert_eq!(shown.borrow()[0].0, FileDialogRequest::Save { name: "contract.docx".into(), dir: Some(dir.to_string_lossy().into_owned()) });
         answer(&shown, None);
         h.run_steps(3);
 
@@ -700,7 +785,7 @@ mod tests {
         h.event(egui::Event::Key { key: egui::Key::S, physical_key: None, pressed: true, repeat: false, modifiers: egui::Modifiers::COMMAND });
         h.run_steps(3);
         assert!(h.state().file_dialog_open(), "the focused editor's Mod+S asks too");
-        assert_eq!(shown.borrow()[0].0, FileDialogRequest::Save { name: "contract.docx".into(), dir: None });
+        assert_eq!(shown.borrow()[0].0, FileDialogRequest::Save { name: "contract.docx".into(), dir: Some(dir.to_string_lossy().into_owned()) });
         answer(&shown, None);
         h.run_steps(3);
         assert!(h.state().session.dirty);
@@ -840,7 +925,10 @@ mod tests {
         let r = a.run("file.saveAs", json!({})).unwrap();
         assert_eq!(r, json!({"saved": false}));
         assert!(a.file_dialog_open(), "F12's saveAs request opens the dialog");
-        assert_eq!(shown.borrow()[0].0, FileDialogRequest::Save { name: "two.docx".into(), dir: None });
+        assert_eq!(
+            shown.borrow()[0].0,
+            FileDialogRequest::Save { name: "two.docx".into(), dir: Some(dir.join("sub").to_string_lossy().into_owned()) }
+        );
         let _ = std::fs::remove_dir_all(&dir);
     }
 

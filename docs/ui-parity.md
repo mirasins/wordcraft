@@ -1,5 +1,7 @@
 # UI parity with Microsoft Word
 
+> **Save/export update:** 2026-10-26 · New desktop files start in the system Documents folder; File › Save As offers Documents and its actual path beside Browse. Existing files keep their folder. PDF export uses the dedicated exporter even without a filename extension; 27 dialog regressions and a synthetic PDF export pass. Full CI encounters the pre-existing Thai fallback font failure.
+
 > **Sync update:** 2026-10-26 · upstream/main `02120c84` merged with Mirai; each native window keeps its own assistant panel state, covered by the window-swap regression. Earlier Windows CI results below are historical, not validation of this merge.
 
 > **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-26 · **Change:** trivial (upstream UI parity additions through 7583871d and egui 0.37; gap 25: resizable Mirai Assistant right panel, compact composer and explicit whole-body consent; no auth/backend changes) · **Target:** Microsoft Word (Microsoft 365) for Mac 16.113.4
@@ -85,6 +87,7 @@ Footnote and endnote editing keeps body and note text at normal opacity, on ligh
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | trivial | M10: Documents default/destination for Save As and export; PDF export stays PDF and leaves editable work unsaved. 27 dialog regressions and a synthetic PDF export pass; full CI encounters the pre-existing Thai font failure. |
 | 2026-10-26 | trivial | Mirai preserved with upstream 02120c84 multi-window UI; each window owns and restores its assistant panel state |
 | 2026-10-26 | trivial | Integrated upstream UI/egui 0.37 work while retaining the Mirai Assistant right panel and whole-body consent behavior; all 8 local CI gates passed. |
 | 2026-10-22 | trivial | View › Window › New Window opens another window on the document, focused and cascaded; two windows on one document are titled `Name:1` and `Name:2` (one window: the plain name). Each window keeps its own selection, scroll position, zoom, view mode, ruler and panes; the text, undo history, unsaved state and file are the document's, so an edit or Undo in either window shows in both, and a caret in text the other window deleted moves to the nearest place left. Closing one of a document's windows asks nothing; closing its last asks about unsaved changes, and quitting asks once per document. Switch Windows lists every window. The web app keeps one window |

@@ -192,6 +192,9 @@ pub struct Services {
     /// used while File › Options names none. File › New lists personal templates from it and Save
     /// as Word Template starts in it. `None` (web) hides personal templates.
     pub templates_dir: Option<std::path::PathBuf>,
+    /// Desktop: the system's Documents folder (including localized/XDG locations).
+    /// New documents start here; the web leaves it unset.
+    pub documents_dir: Option<std::path::PathBuf>,
 }
 
 /// How Save in the Save Changes prompt went.
@@ -2043,6 +2046,10 @@ impl WordApp {
             "ui.saveAsTemplate" => {
                 let dir = self.save_as_template_dialog();
                 json!({"dir": dir})
+            }
+            "ui.saveInDocuments" => {
+                self.save_in_documents_dialog();
+                json!({})
             }
             // The built-in file browser (#576), for when the system's file dialog doesn't show up
             // (desktop only): `purpose` is document (default), picture, recipients or save. A system

@@ -606,6 +606,13 @@ fn save_as_page(app: &mut WordApp, ui: &mut Ui) {
         ui.label(egui::RichText::new(&error).color(ui.visuals().error_fg_color));
         ui.add_space(6.0);
     }
+    if let Some(dir) = app.services.documents_dir.clone().filter(|d| d.is_dir()) {
+        if ui.button(egui::RichText::new(tl!("Documents")).font(medium(14.0))).clicked() {
+            let _ = app.run("ui.saveInDocuments", json!({}));
+        }
+        ui.label(egui::RichText::new(dir.to_string_lossy()).font(regular(13.0)));
+        ui.add_space(8.0);
+    }
     if ui.button(egui::RichText::new(tl!("Browse…")).font(medium(14.0))).clicked() {
         app.save_as_dialog();
     }
@@ -1514,6 +1521,40 @@ mod tests {
         assert_eq!((a.session.doc.core.title.as_str(), a.session.doc.core.creator.as_str()), ("ALPHA", ""));
         a.session.run("edit.undo", &json!({})).unwrap();
         assert_eq!(a.session.doc.core.title, "");
+    }
+
+    #[test]
+    fn save_as_page_offers_documents_and_opens_a_save_dialog_there() {
+        use std::cell::RefCell;
+        use std::rc::Rc;
+        let dir = std::env::temp_dir();
+        let seen = Rc::new(RefCell::new(Vec::new()));
+        let got = seen.clone();
+        let services = Services {
+            documents_dir: Some(dir.clone()),
+            file_dialog: Some(Box::new(move |req| {
+                got.borrow_mut().push(req);
+                let (tx, rx) = std::sync::mpsc::channel();
+                tx.send(Ok(Vec::new())).unwrap();
+                rx
+            })),
+            ..Default::default()
+        };
+        let mut a = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::new()), services);
+        a.run("ui.backstage", json!({"value": true, "page": "saveAs"})).unwrap();
+        let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(1440.0, 900.0)).build_ui_state(
+            |ui, app: &mut WordApp| {
+                let ctx = ui.ctx().clone();
+                app.logic(&ctx);
+                app.ui(ui);
+            },
+            a,
+        );
+        h.run_steps(4);
+        h.get_by_label("Documents").click();
+        h.run_steps(4);
+        assert!(matches!(&seen.borrow()[0], crate::FileDialogRequest::Save { dir: Some(d), .. } if d == &dir.to_string_lossy()));
+        assert!(h.state().session.path.is_none(), "cancelling leaves the document unsaved");
     }
 
     #[test]

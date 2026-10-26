@@ -1,5 +1,7 @@
 # WordCraft roadmap
 
+> **Save/export update:** 2026-10-26 · Documents is the default folder for new desktop saves and exports, with an explicit Save As destination. PDF export uses the dedicated exporter even when the chosen name has no extension. Dialog regressions and a synthetic PDF export pass; full CI still encounters the previously recorded Thai font failure.
+
 > **Highlight update:** 2026-10-25 · Highlight shortcut toggles the last chosen colour off when the whole selection has it; explicit colour commands remain setters (#4085). Readiness estimates unchanged.
 
 **Stage: alpha** · next: beta, ~15 points (60% → 75% ready for real work) and ~150–230 h away
@@ -140,6 +142,10 @@ Ranked, to beta (detail and remaining milestones in [docs/roadmap.md](docs/roadm
    (20–30 h).
 
 ## Progress log
+
+- 2026-10-26: M13/M14 optional compact builds: same-source Fedora x86_64 RPM shrinks from 50,333,270 to 36,263,505 bytes (28.0%); stripped GUI/CLI binaries shrink 29.2%/26.2%. Speed-oriented release and panic unwinding remain unchanged; no formats, fonts or assets removed. A duplicated LaTeX colour formatter now uses `Rgb::hex`; 25 LaTeX tests pass. All 27 dialog tests, 34 Backstage tests, WASM, asset attribution and layering checks pass, and the Save As screenshot was reviewed. Full CI passes fmt/Clippy but still stops at the pre-existing Thai fallback font test; no general performance improvement is claimed.
+
+- 2026-10-26: M10 save/export: desktop Documents folder resolved through the OS (localized/XDG paths), offered explicitly in Save As and used by default for new saves, exports and print PDFs. Existing files keep their folder. PDF export now always invokes the PDF exporter rather than inferring a format from the picked name; the original path and unsaved work are preserved. All 27 file-dialog tests pass; a synthetic tagged PDF retains accents and selectable text. Full CI passes fmt/Clippy but stops at the previously recorded Thai fallback font test.
 
 - 2026-10-26: Mirai fork synchronization with upstream/main `02120c84`, preserving both writing-assistant branches. MCP suggestions retain document routing and assistant panels keep independent per-window state; merge regression tests added. Linux fmt, workspace Clippy, i18n audit, doctests, assets, layers and WASM pass. Full CI is not green: three Thai/Latin font tests and one multiple-spacing pagination test fail in fonts/layout code identical to upstream. The IME epoch test now compares against its initial process-unique document id instead of assuming id 1. Earlier Windows results are historical, not validation of this merge.
   Follow-up workspace run: 4,711 tests passed with those four failures explicitly filtered out and the i18n audit run separately; all three new/extended merge regressions passed. Logs: `/tmp/opencode/wordcraft-sync-ci.log`, `/tmp/opencode/wordcraft-sync-checks.log`, `/tmp/opencode/wordcraft-sync-tests.log` (local, not committed).
@@ -652,6 +658,7 @@ Footer page-table height and body wrapping are corrected. Other pagination gaps 
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | M10: Documents default/destination and dedicated PDF-copy export; optional compact packaging profile and LaTeX colour-helper deduplication. |
 | 2026-10-24 | trivial | Progress log: writing assistant UI rework (gap 25) landed, CI passed (8 gates), headless screenshots reviewed; each request stays independent |
 | 2026-10-26 | trivial | Mirai fork synchronized with upstream/main 02120c84; MCP document routing and per-window assistant state retained; merge regression tests added |
 | 2026-10-24 | trivial | Upstream integration (254351c0) merged with the writing assistant; CI passed (4,081 tests, 8 gates), with overlays for 26 languages and isolated writing assistant contexts; docs only, readiness estimates unchanged |

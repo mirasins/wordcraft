@@ -7,28 +7,36 @@
 #   $DIST/wordcraft-<version>-linux-<arch>.rpm       Fedora, openSUSE, RHEL, ...
 #   $DIST/wordcraft-<version>-linux-<arch>.tar.gz    plain FHS-style tree (bin/, share/)
 #
-# Usage: packaging/linux/package.sh [--skip-build] [--formats "appimage deb rpm tar"]
+# Usage: packaging/linux/package.sh [--skip-build] [--profile <release|compact>] [--formats "appimage deb rpm tar"]
 #
 # Needs: cargo; nfpm for deb/rpm (https://nfpm.goreleaser.com); appimagetool for the AppImage
 # (downloaded into $CARGO_TARGET_DIR if missing). Build on an old distro (CI: Ubuntu 22.04,
 # glibc 2.35) so the binaries run on newer ones. Optional: desktop-file-validate, appstreamcli,
 # zsyncmake (the zsync package) for the AppImage's .zsync.
 set -euo pipefail
+
+SKIP_BUILD=0
+FORMATS="appimage deb rpm tar"
+PROFILE="release"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --skip-build) SKIP_BUILD=1; shift ;;
+    --profile)
+      case "${2:-}" in
+        release|compact) PROFILE="$2"; shift 2 ;;
+        *) echo "unknown profile: ${2:-}" >&2; exit 2 ;;
+      esac
+      ;;
+    --formats) FORMATS="$2"; shift 2 ;;
+    -h | --help) sed -n '2,15p' "$0"; exit 0 ;;
+    *) echo "unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
+
 # shellcheck source=../env.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../env.sh"
 HERE="$ROOT/packaging/linux"
 APP_ID=ai.storyteller.wordcraft
-
-SKIP_BUILD=0
-FORMATS="appimage deb rpm tar"
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --skip-build) SKIP_BUILD=1; shift ;;
-    --formats) FORMATS="$2"; shift 2 ;;
-    -h | --help) sed -n '2,17p' "$0"; exit 0 ;;
-    *) echo "unknown argument: $1" >&2; exit 2 ;;
-  esac
-done
 
 ARCH="${CROSS_ARCH:-$(uname -m)}"
 case "$ARCH" in
@@ -44,12 +52,12 @@ echo "==> WordCraft $VERSION for Linux $ARCH ($FORMATS)"
 
 if [[ "$SKIP_BUILD" = 0 ]]; then
   if [[ -n "${CROSS_TARGET:-}" ]]; then
-    (cd "$ROOT" && cargo build --release --locked -p wordcraft -p wordcraft-cli --target "$CROSS_TARGET")
+    (cd "$ROOT" && cargo build --profile "$PROFILE" --locked -p wordcraft -p wordcraft-cli --target "$CROSS_TARGET")
   else
-    (cd "$ROOT" && cargo build --release --locked -p wordcraft -p wordcraft-cli)
+    (cd "$ROOT" && cargo build --profile "$PROFILE" --locked -p wordcraft -p wordcraft-cli)
   fi
 fi
-BIN="$CARGO_TARGET_DIR/${CROSS_TARGET:+$CROSS_TARGET/}release"
+BIN="$CARGO_TARGET_DIR/${CROSS_TARGET:+$CROSS_TARGET/}$PROFILE"
 WORK="$CARGO_TARGET_DIR/linux-package"
 STAGE="$WORK/root"
 rm -rf "$WORK"

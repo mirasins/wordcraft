@@ -317,7 +317,7 @@ impl Writer {
         }
         if let Some(c) = f.color.filter(|c| *c != Rgb(0, 0, 0)) {
             self.uses.color = true;
-            s = format!("\\textcolor[HTML]{{{}}}{{{s}}}", hex(c));
+            s = format!("\\textcolor[HTML]{{{}}}{{{s}}}", c.hex());
         }
         if let Some(size) = f.size.filter(|v| v.is_finite() && *v >= 1.0 && *v <= 1638.0) {
             s = format!("{{\\fontsize{{{}}}{{{}}}\\selectfont {s}}}", num(size), num(size * 1.2));
@@ -370,7 +370,7 @@ impl Writer {
                 }
                 if let Some(sh) = c.shading {
                     self.uses.color = true;
-                    body = format!("\\cellcolor[HTML]{{{}}}{body}", hex(sh));
+                    body = format!("\\cellcolor[HTML]{{{}}}{body}", sh.hex());
                 }
                 if span > 1 {
                     let col_spec = if t.borderless {
@@ -413,10 +413,6 @@ impl Writer {
         let s = sub.out.trim().trim_end_matches("\\par").trim_end().to_string();
         s.lines().filter(|l| !l.trim().is_empty()).collect::<Vec<_>>().join("\n")
     }
-}
-
-fn hex(c: Rgb) -> String {
-    format!("{:02X}{:02X}{:02X}", c.0, c.1, c.2)
 }
 
 /// A length without needless decimals.

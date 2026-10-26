@@ -1,5 +1,7 @@
 # Releasing WordCraft
 
+> **Last updated:** 2026-10-26 · **Change:** minor (optional compact Linux builds; default release unchanged).
+
 The canonical recipe is [craftrules `release/playbook.md`](https://github.com/storytold/craftrules/blob/main/release/playbook.md);
 this file has the WordCraft specifics.
 
@@ -29,3 +31,41 @@ Local packaging: `packaging/macos/package.sh --arch universal`, `packaging/windo
 Dry run: `gh workflow run release.yml --ref <branch>` builds the unsigned jobs (version, Linux,
 Linux riscv64, Flatpak, FreeBSD, web) on any branch; the signing jobs are refused there by the `release`
 environment's branch rule, so no draft release is made.
+
+## Optional compact builds
+
+`release` remains the speed-oriented default. To compare a size-oriented desktop/CLI build:
+
+```sh
+DIST="$PWD/dist/compact" packaging/linux/package.sh --profile compact --formats rpm
+```
+
+This uses the `compact` Cargo profile: size optimization (`opt-level = "s"`), one codegen unit,
+thin LTO and stripped symbols. Panic unwinding and the session recovery guard remain enabled;
+no file formats, fonts or assets are removed. Size optimization can reduce runtime performance,
+so compare representative documents before choosing it for distribution. Use a separate `DIST`
+because both profiles intentionally produce the same package filenames. `--skip-build` uses
+the selected profile's existing binaries; do not use it for a fresh comparison.
+
+Measured on Fedora 44 x86_64, 2026-10-26, from the same working tree (both packages stripped):
+
+| Artifact | Release (bytes) | Compact (bytes) | Reduction |
+|---|---:|---:|---:|
+| GUI binary | 77,627,432 | 54,985,360 | 29.2% |
+| CLI binary | 37,583,056 | 27,737,328 | 26.2% |
+| RPM | 50,333,270 | 36,263,505 | 28.0% |
+
+A synthetic sample-to-PDF smoke check succeeds in both profiles and yields identical extracted
+text. Short timings collected during concurrent compilation are not a performance benchmark;
+large-document latency and native UI performance still need representative measurement. Neither
+this comparison nor the compact profile changes the installed application automatically.
+
+`target/` is a rebuildable compilation cache, not part of the installed app or RPM. Debug
+incremental artifacts account for much of its size. Cleaning them trades disk space for slower
+rebuilds; never clean while another build is using the directory. No automatic cleanup is performed.
+
+## Revision history
+
+| Date | Change | Summary |
+|---|---|---|
+| 2026-10-26 | minor | Optional compact profile and Linux packaging flag; document cache/package distinction and tradeoffs. |
