@@ -75,12 +75,22 @@ fn originals(snapshot: &Value) -> Result<Vec<String>, String> {
         .collect()
 }
 
+/// What each target of a snapshot is (`paragraph`, `heading 1`…), for the assistant to see the
+/// structure it may change. Targets without one are described as paragraphs.
+fn structures(snapshot: &Value) -> Vec<String> {
+    snapshot
+        .get("targets")
+        .and_then(Value::as_array)
+        .map(|targets| targets.iter().map(|t| t.get("structure").and_then(Value::as_str).unwrap_or("paragraph").to_string()).collect())
+        .unwrap_or_default()
+}
+
 fn context(session: &mut Session, scope: &str, confirm_document: bool) -> Result<Value, String> {
     session.run("assistant.context", &json!({"scope": scope, "confirm_document": confirm_document})).map_err(|e| e.to_string())
 }
 
 /// Checks a model answer against the request: indices in range and unique, bounded strings, and
-/// single-paragraph replacement text (what `assistant.apply` accepts).
+/// single-paragraph plain text or bounded Markdown (what `assistant.apply` accepts).
 fn check_response(r: &Response, targets: usize) -> Result<(), String> {
     if r.explanation.len() > MAX_EXPLANATION_BYTES {
         return Err("the assistant's explanation is too long".into());
@@ -90,7 +100,7 @@ fn check_response(r: &Response, targets: usize) -> Result<(), String> {
         if s.index >= targets || !seen.insert(s.index) {
             return Err(format!("the assistant suggested an unknown or repeated target index {}", s.index));
         }
-        if s.text.len() > MAX_TEXT_BYTES || s.text.contains(['\r', '\n', '\u{2029}', '\u{000B}']) {
+        if s.text.len() > MAX_TEXT_BYTES || (!s.markdown && s.text.contains(['\r', '\n', '\u{2029}', '\u{000B}'])) {
             return Err(format!("the assistant's text for target {} is not one bounded paragraph", s.index));
         }
     }
@@ -111,7 +121,8 @@ pub fn suggest(session: &mut Session, params: &Value, generate: impl FnOnce(&Req
         None
     };
     let instruction = if p.explain_only { format!("{EXPLAIN_PREFIX} {}", p.instruction) } else { p.instruction };
-    let request = Request { instruction, targets, context: document };
+    let structure = structures(&snapshot);
+    let request = Request { instruction, targets, structure, context: document };
     request.validate().map_err(|e| e.to_string())?;
     let reply = generate(&request)?;
     let response: Response = serde_json::from_value(reply).map_err(|_| "the assistant returned an invalid answer".to_string())?;
@@ -128,7 +139,7 @@ pub fn suggest(session: &mut Session, params: &Value, generate: impl FnOnce(&Req
 pub fn generate_locally(request: &Request, model: Option<&str>) -> Result<Value, String> {
     let client = Client::discover().and_then(|c| c.with_model(model)).map_err(|e| e.to_string())?;
     let cancel = AtomicBool::new(false);
-    client.auth(&cancel).map_err(|e| e.to_string())?;
+    // `generate` checks the sign-in itself; a separate check would start one more process.
     let reply = client.generate(request, &cancel).map_err(|e| e.to_string())?;
     serde_json::to_value(&reply).map_err(|e| e.to_string())
 }
@@ -184,6 +195,26 @@ mod tests {
             .unwrap();
         assert_eq!(applied["applied"], 1);
         assert_eq!(text_of(&mut h), "Alpha is fast.\nBeta is fine.");
+    }
+
+    #[test]
+    fn markdown_suggestions_carry_structure_and_apply_as_formatted_blocks() {
+        let mut h = headless("Notes\nfirst point, second point");
+        let mut structure = Vec::new();
+        let out = suggest(&mut h.session, &json!({"instruction": "Structure it", "scope": "document", "confirm_document": true}), |req| {
+            structure = req.structure.clone();
+            Ok(json!({"suggestions": [
+                {"index": 0, "text": "# Notes", "markdown": true},
+                {"index": 1, "text": "- first point\n- second point", "markdown": true}
+            ], "explanation": "Made a heading and a list."}))
+        })
+        .unwrap();
+        assert_eq!(structure, ["paragraph", "paragraph"]);
+        h.call("engine.execute", json!({"command": "assistant.apply", "params": {"context": out["context"], "changes": out["suggestions"]}}))
+            .unwrap();
+        assert_eq!(text_of(&mut h), "Notes\nfirst point\nsecond point");
+        let p = h.session.doc.para(wordcraft_doc::StoryRef::Body, &wordcraft_doc::Path::top(0)).map(|p| p.props.style.clone());
+        assert_eq!(p, Some(Some("Heading1".to_string())));
     }
 
     #[test]

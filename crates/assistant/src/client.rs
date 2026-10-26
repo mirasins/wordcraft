@@ -85,6 +85,15 @@ impl Provider for Client {
     /// Validates the request, re-checks auth immediately, then asks Claude for structured suggestions.
     /// Generation uses the same credential mode that the preflight chose.
     fn generate(&self, request: &Request, cancel: &AtomicBool) -> Result<Response, Error> {
+        self.generate_with_auth(request, cancel).map(|(_, response)| response)
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Client {
+    /// [`Provider::generate`] that also returns the sign-in it checked, so a caller showing the
+    /// connection needs no separate `auth` run (each run starts a Claude Code process).
+    pub fn generate_with_auth(&self, request: &Request, cancel: &AtomicBool) -> Result<(AuthState, Response), Error> {
         request.validate()?;
         let payload = crate::protocol::prompt_payload(request)?;
         let mode = self.auth(cancel)?;
@@ -102,7 +111,7 @@ impl Provider for Client {
         )?;
         let parsed = crate::protocol::parse_response(&out.stdout, request.targets.len());
         match parsed {
-            Ok(response) if out.success => Ok(response),
+            Ok(response) if out.success => Ok((mode, response)),
             Ok(_) => Err(Error::Failed),
             Err(error) => Err(error),
         }
@@ -121,6 +130,13 @@ impl Client {
 
     pub fn with_model(self, model: Option<&str>) -> Result<Self, Error> {
         crate::protocol::model_name(model).map(|_| self)
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+impl Client {
+    pub fn generate_with_auth(&self, _request: &Request, _cancel: &AtomicBool) -> Result<(AuthState, Response), Error> {
+        Err(Error::Unavailable)
     }
 }
 

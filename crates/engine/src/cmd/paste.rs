@@ -447,6 +447,11 @@ pub(crate) fn unlink_sections(blocks: &mut [Block]) {
 
 /// Turn an imported document into a fragment of the session's document: bring over the media,
 /// lists and styles it refers to (renumbered so they can't collide with ours).
+/// Markdown as a fragment of this document: the writing assistant's formatted suggestions.
+pub(crate) fn markdown_fragment(s: &mut Session, md: &str) -> Fragment {
+    adopt(s, wordcraft_formats::markdown::import(md))
+}
+
 fn adopt(s: &mut Session, src: Document) -> Fragment {
     let mut media = BTreeMap::new();
     for (key, data) in &src.media {

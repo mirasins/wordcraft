@@ -28,11 +28,26 @@
 	Uses official Claude Code with your account/OAuth. No API keys or fallback providers.	Usa Claude Code oficial con tu cuenta u OAuth. Sin claves de API ni proveedores alternativos.
 	Sign in or change account	Iniciar sesión o cambiar de cuenta
 	Install Claude Code, then run `claude auth login` in your terminal. To change account, use its official logout/login flow and check the connection again.	Instala Claude Code y luego ejecuta `claude auth login` en tu terminal. Para cambiar de cuenta, usa su flujo oficial de cierre e inicio de sesión y vuelve a comprobar la conexión.
+	Sign in	Iniciar sesión
+	Change account	Cambiar cuenta
+	To change accounts, use Claude Code's official sign-out and sign-in flow in a terminal.	Para cambiar de cuenta, cierra e inicia sesión mediante el flujo oficial de Claude Code desde la terminal.
+	Copy sign-out command	Copiar comando de cierre de sesión
+	Copy sign-in command	Copiar comando de inicio de sesión
+	In a terminal, run the official Claude Code login command:	En una terminal, ejecuta el comando oficial de inicio de sesión de Claude Code:
+	Copy command	Copiar comando
+	WordCraft does not start login or handle your credentials.	WordCraft no inicia sesión ni accede a tus credenciales.
+	Check connection only checks the current Claude Code login; it does not sign in.	Comprobar conexión solo verifica la sesión actual de Claude Code; no inicia sesión.
 	Official authentication instructions	Instrucciones oficiales de autenticación
 	Scope	Ámbito
-	Automatic: selected text, or the whole document when nothing is selected (approval required).	Automático: el texto seleccionado o, si no hay selección, todo el documento (requiere aprobación).
+	Automatic: selected text, or the whole document when nothing is selected.	Automático: el texto seleccionado o, si no hay selección, todo el documento.
+	Will send the selected text	Se enviará el texto seleccionado
+	Will send the paragraph with the caret	Se enviará el párrafo del cursor
+	Will send the section with the caret	Se enviará la sección del cursor
+	Will send the whole document	Se enviará todo el documento
+	The whole document will be sent to Claude. Press Enter or Send again to continue.	Se enviará todo el documento a Claude. Pulsa Enter o Enviar otra vez para continuar.
+	Suggested (formatted)	Sugerido (con formato)
+	Suggested: remove this paragraph	Sugerido: eliminar este párrafo
 	Include the whole document as context	Incluir todo el documento como contexto
-	I approve sending the whole document for this request	Apruebo enviar el documento completo para esta solicitud
 	What would you like to do with this text?	¿Qué quieres hacer con este texto?
 	Improve writing	Mejorar la redacción
 	Make concise	Hacer más conciso

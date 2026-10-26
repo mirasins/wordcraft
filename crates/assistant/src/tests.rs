@@ -11,7 +11,7 @@ use crate::protocol::{Source, parse_auth_status, parse_response, prompt_payload,
 use crate::{AuthState, Client, Error, MAX_OUTPUT_BYTES, MAX_TARGETS, MAX_TEXT_BYTES, Provider, Request};
 
 fn request(targets: &[&str]) -> Request {
-    Request { instruction: "Make it formal".into(), targets: targets.iter().map(|t| (*t).to_owned()).collect(), context: None }
+    Request { instruction: "Make it formal".into(), targets: targets.iter().map(|t| (*t).to_owned()).collect(), structure: Vec::new(), context: None }
 }
 
 fn success(structured: &str) -> Vec<u8> {
@@ -190,6 +190,37 @@ fn request_limits_are_enforced() {
     assert_eq!(request(&["a\u{0000}b"]).validate(), Err(Error::InvalidRequest));
     assert_eq!(request(&["a\u{2028}b"]).validate(), Err(Error::InvalidRequest));
     assert_eq!(request(&["a\u{2029}b"]).validate(), Err(Error::InvalidRequest));
+}
+
+#[test]
+fn structure_is_sent_and_bounded() {
+    let mut req = request(&["Intro", "Body"]);
+    let plain = prompt_payload(&req).unwrap_or_default();
+    assert!(!plain.contains("structure"), "no structure key without structure");
+    req.structure = vec!["heading 1".into(), "paragraph".into()];
+    assert_eq!(req.validate(), Ok(()));
+    assert!(prompt_payload(&req).unwrap_or_default().contains(r#""structure":["heading 1","paragraph"]"#));
+    req.structure.push("extra".into());
+    assert_eq!(req.validate(), Err(Error::TooLong));
+    req.structure = vec!["x".repeat(crate::MAX_STRUCTURE_BYTES + 1)];
+    assert_eq!(req.validate(), Err(Error::TooLong));
+    req.structure = vec!["a\nb".into()];
+    assert_eq!(req.validate(), Err(Error::InvalidRequest));
+}
+
+#[test]
+fn markdown_suggestions_may_span_lines_or_be_empty() {
+    let multi = success(
+        r##"{"suggestions":[{"index":0,"text":"# Title\n\n- one\n- **two**","markdown":true},{"index":1,"text":"","markdown":true}],"explanation":"ok"}"##,
+    );
+    let parsed = parse_response(&multi, 2).unwrap();
+    assert!(parsed.suggestions.iter().all(|s| s.markdown));
+    assert_eq!(parsed.suggestions.first().map(|s| s.text.lines().count()), Some(4));
+    let plain_lines = success(r#"{"suggestions":[{"index":0,"text":"a\nb"}],"explanation":"ok"}"#);
+    assert_eq!(parse_response(&plain_lines, 1).map(|_| ()), Err(Error::InvalidResponse), "plain text stays one line");
+    let object = success(r#"{"suggestions":[{"index":0,"text":"a￼b","markdown":true}],"explanation":"ok"}"#);
+    assert_eq!(parse_response(&object, 1).map(|_| ()), Err(Error::InvalidResponse));
+    assert!(crate::protocol::OUTPUT_SCHEMA.contains(r#""markdown":{"type":"boolean"}"#));
 }
 
 #[test]
@@ -431,10 +462,17 @@ fn live_generation_with_signed_in_account() {
     let request = Request {
         instruction: "Correct spelling only.".into(),
         targets: vec!["Ths sentense has two erors.".into(), "This one is fine.".into()],
+        structure: Vec::new(),
         context: None,
     };
     let response = client.generate(&request, &cancel).unwrap();
     eprintln!("live: auth {auth:?}, {} suggestion(s): {:?}", response.suggestions.len(), response.suggestions);
     let first = response.suggestions.iter().find(|s| s.index == 0).map(|s| s.text.as_str());
     assert_eq!(first.map(|t| t.contains("sentence") && t.contains("errors")), Some(true), "{:?}", response.suggestions);
+}
+
+#[test]
+fn claude_starts_without_a_console_window() {
+    // Win32 CREATE_NO_WINDOW; `run_claude` sets it on Windows, where std can't read it back.
+    assert_eq!(crate::process::CREATE_NO_WINDOW, 0x0800_0000);
 }

@@ -16,6 +16,11 @@ pub(crate) const AUTH_TIMEOUT: Duration = Duration::from_secs(30);
 pub(crate) const GENERATE_TIMEOUT: Duration = Duration::from_secs(120);
 const POLL: Duration = Duration::from_millis(20);
 
+/// Win32 `CREATE_NO_WINDOW` process creation flag. `claude.exe` is a console program: started from
+/// the windowed app without it, every connection check and request flashes a console window.
+#[cfg(any(windows, test))]
+pub(crate) const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+
 /// Generation flags: safe mode, no tools, no MCP, no session files, no permission prompts.
 /// Prompt data arrives on stdin only.
 pub(crate) const GENERATION_ARGS: &[&str] = &[
@@ -130,6 +135,8 @@ pub(crate) fn run_claude(
     let scratch = ScratchDir::create()?;
     let mut command = Command::new(executable);
     command.args(args).current_dir(scratch.path());
+    #[cfg(windows)]
+    std::os::windows::process::CommandExt::creation_flags(&mut command, CREATE_NO_WINDOW);
     for key in credential_override_keys(std::env::vars_os().map(|(key, _)| key), allow_oauth_token) {
         command.env_remove(key);
     }

@@ -7,10 +7,12 @@
 use std::collections::HashSet;
 
 use serde::{Deserialize, Serialize};
+use wordcraft_doc::edit::Fragment;
 use wordcraft_doc::para::OBJ;
-use wordcraft_doc::props::CharProps;
+use wordcraft_doc::props::{CharProps, ParaProps};
 use wordcraft_doc::styles::{Style, StyleKind};
-use wordcraft_doc::{Path, Pos, StoryRef};
+use wordcraft_doc::{Block, Paragraph, Path, Pos, StoryRef};
+use wordcraft_formats::model::{Kind, para_kind};
 
 use crate::{CmdError, Selection, Session};
 
@@ -30,6 +32,10 @@ pub struct Target {
     /// is no longer checked and it can't be applied again.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub applied: bool,
+    /// What the paragraph is (`paragraph`, `heading 2`, `bulleted list item, level 1`…), so the
+    /// assistant knows the structure it rewrites. Informational: `apply` doesn't check it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub structure: Option<String>,
 }
 
 /// What the assistant was given: the document identity and revision it was read at, the
@@ -43,12 +49,16 @@ pub struct Context {
     pub targets: Vec<Target>,
 }
 
-/// One replacement for the target at `index` of a context.
+/// One replacement for the target at `index` of a context: plain text (one paragraph, keeping
+/// the target's formatting), or Markdown (`markdown: true`) that replaces the whole target with
+/// formatted text and possibly several blocks; empty Markdown removes the target.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Change {
     pub index: usize,
     pub text: String,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub markdown: bool,
 }
 
 /// What `assistant.apply` receives.
@@ -127,6 +137,18 @@ struct Collector {
 }
 
 impl Collector {
+    /// A whole paragraph of a document or section scope: empty paragraphs, and paragraphs the
+    /// assistant can't rewrite (objects, fields, tracked deletions, hidden text), are left out
+    /// instead of refusing the whole request. Their text is never sent.
+    fn add_rewritable(&mut self, s: &Session, story: StoryRef, path: &Path) -> Result<(), CmdError> {
+        let p = s.doc.para(story, path).ok_or_else(|| fail(format!("no paragraph at {path}")))?;
+        if p.text.trim().is_empty() || p.text.contains(OBJ) || hides_text(s, p, path.cell().is_some()) {
+            return Ok(());
+        }
+        let len = p.len();
+        self.add(s, story, path, 0, len)
+    }
+
     fn add(&mut self, s: &Session, story: StoryRef, path: &Path, from: usize, to: usize) -> Result<(), CmdError> {
         if self.targets.len() >= MAX_TARGETS {
             return Err(refuse(format!("more than {MAX_TARGETS} paragraphs; select a smaller part of the document")));
@@ -150,9 +172,47 @@ impl Collector {
         }
         let original = p.text.get(from..to).ok_or_else(|| fail(format!("paragraph {path}: offsets aren't on character boundaries")))?.to_string();
         self.bytes += len;
-        self.targets.push(Target { start: Pos::new(story, path.clone(), from), end: Pos::new(story, path.clone(), to), original, applied: false });
+        let structure = Some(describe(s, p, path.cell().is_some()));
+        self.targets.push(Target {
+            start: Pos::new(story, path.clone(), from),
+            end: Pos::new(story, path.clone(), to),
+            original,
+            applied: false,
+            structure,
+        });
         Ok(())
     }
+}
+
+/// What a paragraph is, in the words the assistant's structure list uses.
+fn describe(s: &Session, p: &Paragraph, in_table: bool) -> String {
+    let (kind, list) = para_kind(&s.doc, p);
+    let mut out = match kind {
+        Kind::Heading(n) => format!("heading {n}"),
+        Kind::Title => "title".to_string(),
+        Kind::Quote => "quote".to_string(),
+        Kind::Code => "code".to_string(),
+        Kind::Rule | Kind::Normal => "paragraph".to_string(),
+    };
+    if let Some(l) = list {
+        let which = if l.ordered { "numbered" } else { "bulleted" };
+        out = if out == "paragraph" {
+            format!("{which} list item, level {}", l.level + 1)
+        } else {
+            format!("{out}, {which} list, level {}", l.level + 1)
+        };
+    }
+    if in_table {
+        out.push_str(", in a table cell");
+    }
+    out
+}
+
+/// Whether the paragraph's kind is structure Markdown expresses (heading, title, quote, code or a
+/// list), so a plain Markdown paragraph in its place means plain body text.
+fn is_structural(s: &Session, p: &Paragraph) -> bool {
+    let (kind, list) = para_kind(&s.doc, p);
+    list.is_some() || !matches!(kind, Kind::Normal | Kind::Rule)
 }
 
 /// Build the context for `cp`. Scopes: `auto` (the selection, else the whole body),
@@ -192,20 +252,28 @@ pub fn context(s: &Session, cp: &ContextParams) -> Result<Context, CmdError> {
             }
             let top = s.sel.focus.path.0.first().copied().unwrap_or(0) as usize;
             let (from, to) = section_range(s, top);
+            if from == 0 && to.saturating_add(1) >= s.doc.body.len() && !cp.confirm_document {
+                return Err(refuse("this section is the whole document; set \"confirm_document\": true to send it"));
+            }
             for path in s.doc.para_paths(StoryRef::Body) {
                 let i = path.0.first().copied().unwrap_or(0) as usize;
                 if (from..=to).contains(&i) {
-                    let len = para_len(s, StoryRef::Body, &path)?;
-                    col.add(s, StoryRef::Body, &path, 0, len)?;
+                    col.add_rewritable(s, StoryRef::Body, &path)?;
                 }
             }
         }
         _ => {
             for path in s.doc.para_paths(StoryRef::Body) {
-                let len = para_len(s, StoryRef::Body, &path)?;
-                col.add(s, StoryRef::Body, &path, 0, len)?;
+                col.add_rewritable(s, StoryRef::Body, &path)?;
             }
         }
+    }
+    // An empty document (or section) still gets the caret's paragraph, so the assistant can write
+    // into it.
+    if col.targets.is_empty() && matches!(scope, "section" | "document") {
+        let path = s.sel.focus.path.clone();
+        let len = para_len(s, story, &path)?;
+        col.add(s, story, &path, 0, len)?;
     }
     if covers_body(s, &col.targets) && !cp.confirm_document {
         return Err(refuse("these paragraphs are the whole document; set \"confirm_document\": true to send it"));
@@ -308,10 +376,11 @@ fn check_context(s: &Session, ctx: &Context) -> Result<(), CmdError> {
 }
 
 /// A context holds one target per paragraph (the generator's invariant). Replacements then never
-/// shift another target's offsets, and the updated context needs no rebasing.
+/// shift another target's offsets. Applied targets are never edited again, so they don't count:
+/// a removed paragraph's target may share its path with the next one's.
 fn one_target_per_paragraph(ctx: &Context) -> Result<(), CmdError> {
     let mut seen: HashSet<(StoryRef, &Path)> = HashSet::with_capacity(ctx.targets.len());
-    for t in &ctx.targets {
+    for t in ctx.targets.iter().filter(|t| !t.applied) {
         if !seen.insert((t.start.story, &t.start.path)) {
             return Err(refuse(format!("paragraph {} appears in two targets; a context holds one target per paragraph", t.start.path)));
         }
@@ -320,17 +389,19 @@ fn one_target_per_paragraph(ctx: &Context) -> Result<(), CmdError> {
 }
 
 /// One replacement inside a paragraph: `middle` goes in place of `from..to`; `full` is the
-/// target's text afterwards.
+/// target's text afterwards. A Markdown edit puts `middle`, read as Markdown, in place of the
+/// whole target.
 struct Edit {
     idx: usize,
     from: Pos,
     to: Pos,
     middle: String,
     full: String,
+    markdown: bool,
 }
 
 /// The minimal edits for `changes`, in document order. Refuses no-op changes, duplicated indices,
-/// and text that isn't one paragraph of plain text.
+/// plain text that isn't one paragraph, and control characters or objects in any text.
 fn plan(ctx: &Context, changes: &[Change]) -> Result<Vec<Edit>, CmdError> {
     let total = changes.iter().fold(0usize, |n, c| n.saturating_add(c.text.len()));
     if total > MAX_CONTEXT_BYTES {
@@ -347,6 +418,16 @@ fn plan(ctx: &Context, changes: &[Change]) -> Result<Vec<Edit>, CmdError> {
         let slot = seen.get_mut(ch.index).ok_or_else(|| refuse(format!("change index {} is out of range", ch.index)))?;
         if std::mem::replace(slot, true) {
             return Err(refuse(format!("change index {} appears twice", ch.index)));
+        }
+        if ch.markdown {
+            if ch.text.chars().any(|c| c == OBJ || (c.is_control() && !matches!(c, '\t' | '\n' | '\r'))) {
+                return Err(refuse(format!("change {}: Markdown text can't hold control characters or objects", ch.index)));
+            }
+            if t.applied {
+                return Err(refuse(format!("change {}: the target was already applied", ch.index)));
+            }
+            out.push(Edit { idx: ch.index, from: t.start.clone(), to: t.end.clone(), middle: ch.text.clone(), full: String::new(), markdown: true });
+            continue;
         }
         if ch.text.chars().any(|c| matches!(c, OBJ | '\u{2028}' | '\u{2029}') || (c.is_control() && c != '\t')) {
             return Err(refuse(format!(
@@ -372,6 +453,7 @@ fn plan(ctx: &Context, changes: &[Change]) -> Result<Vec<Edit>, CmdError> {
             to: Pos { off: to, ..t.end.clone() },
             middle,
             full: ch.text.clone(),
+            markdown: false,
         });
     }
     if out.is_empty() {
@@ -381,16 +463,152 @@ fn plan(ctx: &Context, changes: &[Change]) -> Result<Vec<Edit>, CmdError> {
     Ok(out)
 }
 
+/// Blocks a Markdown edit added (`delta` > 0) or removed in one container of a story: the later
+/// blocks of that container move by `delta`.
+struct Shift {
+    story: StoryRef,
+    parent: Vec<u32>,
+    at: usize,
+    delta: i64,
+}
+
+impl Shift {
+    /// How far a path read before the edit moves.
+    fn of(&self, story: StoryRef, path: &Path) -> i64 {
+        let n = self.parent.len();
+        let inside = story == self.story && path.0.get(..n) == Some(self.parent.as_slice());
+        match path.0.get(n) {
+            Some(&i) if inside && i as usize > self.at => self.delta,
+            _ => 0,
+        }
+    }
+}
+
+/// `path` with the index at `depth_index` moved by `delta`.
+fn moved(path: &Path, depth_index: usize, delta: i64) -> Path {
+    let mut p = path.clone();
+    if let Some(i) = p.0.get_mut(depth_index) {
+        *i = u32::try_from(i64::from(*i).saturating_add(delta).max(0)).unwrap_or(u32::MAX);
+    }
+    p
+}
+
+/// Character formatting new Markdown text starts from: the target's own at its start, without
+/// the emphasis, character style, link and revision marks Markdown states for itself.
+fn base_char_props(dest: &Paragraph, off: usize) -> CharProps {
+    let mut base = dest.props_at(off).clone();
+    base.style = None;
+    base.bold = None;
+    base.italic = None;
+    base.underline = None;
+    base.strike = None;
+    base.link = None;
+    base.ins = None;
+    base.del = None;
+    base.fmt_change = None;
+    base
+}
+
+/// Fit a Markdown fragment to the target it replaces. Plain paragraphs keep the target's fonts and
+/// colours, with the Markdown's emphasis over them; replacing a whole body paragraph they keep its
+/// paragraph formatting too. Headings, lists, quotes and code keep the formatting of their styles.
+fn blend(frag: &mut Fragment, dest: &Paragraph, dest_structural: bool, off: usize, whole: bool) {
+    let base = base_char_props(dest, off);
+    for b in &mut frag.blocks {
+        let Block::Para(p) = b else { continue };
+        let plain = p.props.style.is_none() && p.props.numbering.is_none();
+        if plain || !whole {
+            for r in &mut p.runs {
+                let mut props = base.clone();
+                props.overlay(&r.props);
+                r.props = props;
+            }
+        }
+        if whole && plain && !dest_structural {
+            let mut props: ParaProps = dest.props.clone();
+            props.fmt_change = None;
+            props.num_change = None;
+            p.props = props;
+        }
+    }
+}
+
+/// Remove the target of an empty Markdown change: a whole paragraph goes with its paragraph mark
+/// (joined to the paragraph before it, else removed outright), keeping a section break it holds.
+fn remove_target(s: &mut Session, e: &Edit, dest: &Paragraph, whole: bool, blocks: usize) -> Result<(), CmdError> {
+    let story = e.from.story;
+    let path = &e.from.path;
+    let track = s.doc.settings.track_changes;
+    let prev = path.last().checked_sub(1).map(|i| path.with_last(i)).filter(|p| s.doc.para(story, p).is_some());
+    if whole && dest.section.is_none() && blocks > 1 {
+        if let Some(prev) = prev {
+            let len = para_len(s, story, &prev)?;
+            let a = Pos::new(story, prev, len);
+            crate::cmd::controls::check_edit(s, &a, &e.to)?;
+            s.sel = Selection { anchor: a, focus: e.to.clone() };
+            crate::cmd::delete_selection(s)?;
+            return Ok(());
+        }
+        if !track {
+            s.doc.remove_block(story, path).map_err(|err| fail(err.to_string()))?;
+            s.sel = Selection::caret(Pos::new(story, path.clone(), 0));
+            return Ok(());
+        }
+    }
+    s.sel = Selection { anchor: e.from.clone(), focus: e.to.clone() };
+    crate::cmd::delete_selection(s)?;
+    Ok(())
+}
+
+/// Apply one Markdown edit; returns how the blocks after it moved.
+fn apply_markdown(s: &mut Session, e: &Edit) -> Result<Option<Shift>, CmdError> {
+    let story = e.from.story;
+    let path = e.from.path.clone();
+    let count = |s: &Session| s.doc.container(story, &path).map_or(0, |b| b.len());
+    let before = count(s);
+    let dest = s.doc.para(story, &path).ok_or_else(|| fail(format!("no paragraph at {path}")))?.clone();
+    let whole = e.from.off == 0 && e.to.off == dest.len();
+    let dest_structural = is_structural(s, &dest);
+    if e.middle.trim().is_empty() {
+        remove_target(s, e, &dest, whole, before)?;
+    } else {
+        let mut frag = crate::cmd::paste::markdown_fragment(s, &e.middle);
+        blend(&mut frag, &dest, dest_structural, e.from.off, whole);
+        let first = match frag.blocks.first() {
+            Some(Block::Para(p)) => Some(p.props.clone()),
+            _ => None,
+        };
+        s.pending_move = None;
+        s.sel = Selection { anchor: e.from.clone(), focus: e.to.clone() };
+        crate::cmd::paste::insert(s, frag)?;
+        // Pasting keeps the paragraph formatting where the first block lands; a whole target
+        // takes the Markdown's (a heading, a list item, or plain text again).
+        if whole
+            && let Some(props) = first
+            && let Ok(p) = s.doc.para_mut(story, &path)
+        {
+            p.props = props;
+        }
+    }
+    let delta = i64::try_from(count(s)).unwrap_or(i64::MAX).saturating_sub(i64::try_from(before).unwrap_or(i64::MAX));
+    Ok((delta != 0).then(|| Shift { story, parent: path.parent().to_vec(), at: path.last(), delta }))
+}
+
 /// Apply `req` as one undoable step (the caller's `Session::run` checkpoint). Nothing changes
 /// unless every target validates and every change plans.
 pub fn apply(s: &mut Session, req: &ApplyRequest) -> Result<Applied, CmdError> {
     check_context(s, &req.context)?;
     let edits = plan(&req.context, &req.changes)?;
     let track = s.doc.settings.track_changes;
-    // Last paragraph first, so earlier offsets in each paragraph stay valid. `paste_text` takes
-    // its formatting from the first replaced character, so the selection is the replaced text.
+    let mut shifts = Vec::new();
+    // Last paragraph first, so earlier offsets and paths stay valid. `paste_text` takes its
+    // formatting from the first replaced character, so the selection is the replaced text.
     for e in edits.iter().rev() {
         crate::cmd::controls::check_edit(s, &e.from, &e.to)?;
+        if e.markdown {
+            shifts.extend(apply_markdown(s, e)?);
+            continue;
+        }
         let before = para_len(s, e.from.story, &e.from.path)?;
         s.sel = Selection { anchor: e.from.clone(), focus: e.to.clone() };
         crate::cmd::paste_text(s, &e.middle)?;
@@ -407,13 +625,26 @@ pub fn apply(s: &mut Session, req: &ApplyRequest) -> Result<Applied, CmdError> {
     let mut updated = req.context.clone();
     for e in &edits {
         if let Some(t) = updated.targets.get_mut(e.idx) {
-            if track {
-                // The deleted text stays in the paragraph: the offsets no longer describe it.
+            if track || e.markdown {
+                // The deleted text stays in the paragraph, or the target became other blocks:
+                // the offsets no longer describe it.
                 t.applied = true;
                 continue;
             }
             t.end = Pos { off: t.start.off.saturating_add(e.full.len()), ..t.start.clone() };
             t.original = e.full.clone();
+        }
+    }
+    // Blocks added or removed by Markdown edits move the targets after them. Every shift is
+    // measured against the paths as they were read.
+    for t in &mut updated.targets {
+        let read = t.start.path.clone();
+        for sh in &shifts {
+            let delta = sh.of(t.start.story, &read);
+            if delta != 0 {
+                t.start.path = moved(&t.start.path, sh.parent.len(), delta);
+                t.end.path = moved(&t.end.path, sh.parent.len(), delta);
+            }
         }
     }
     updated.revision = s.rev().saturating_add(1);

@@ -24,6 +24,7 @@ wordcraft-engine = { workspace = true }
 wordcraft-assistant = { workspace = true }
 wordcraft-zotero = { workspace = true }
 egui = { workspace = true, features = ["default_fonts", "monochrome_emoji_fonts"] }
+egui_extras = { workspace = true, features = ["svg"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 log = { workspace = true }

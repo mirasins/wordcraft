@@ -1,5 +1,5 @@
 //! Writing assistant commands: `assistant.context` reads a bounded, revision-checked context and
-//! `assistant.apply` applies validated replacements from it as one undo step.
+//! `assistant.apply` applies validated replacements (plain text or Markdown) from it as one undo step.
 
 use serde_json::{Value, json};
 
@@ -12,7 +12,7 @@ pub fn specs() -> Vec<CommandSpec> {
             .params(r#"{"scope": "auto" | "selection" | "paragraph" | "section" | "document", "confirm_document"?: bool} (auto uses selected text, or the whole body when there is no text selection; whole-body contexts require confirm_document: true)"#)
             .pure(),
         CommandSpec::new("assistant.apply", "Apply Mirai Assistant Changes", "Review › Mirai Assistant", apply)
-            .params(r#"{"context": Context, "changes": [{"index": number, "text": string}]}"#),
+            .params(r#"{"context": Context, "changes": [{"index": number, "text": string, "markdown"?: bool}]} (plain text is one paragraph and keeps the target's formatting; markdown: true replaces the whole target with formatted blocks, and empty Markdown removes it)"#),
     ]
 }
 

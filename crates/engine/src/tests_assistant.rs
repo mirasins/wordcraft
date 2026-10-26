@@ -454,3 +454,154 @@ fn locked_document_refuses_apply() {
     assert!(s.run("assistant.apply", &apply_req(&c, json!([{"index": 0, "text": "x"}]))).is_err());
     assert_eq!(body(&s), "one\ntwo");
 }
+
+fn style_of(s: &Session, i: usize) -> Option<String> {
+    s.doc.para(StoryRef::Body, &Path::top(i)).and_then(|p| p.props.style.clone())
+}
+
+#[test]
+fn document_scope_leaves_out_empty_and_object_paragraphs() {
+    let mut s = session("one\n\nthree\nfour");
+    s.doc.para_mut(StoryRef::Body, &Path::top(3)).unwrap().text.push(OBJ);
+    let v = ctx(&mut s, "document", true).unwrap();
+    let originals: Vec<&str> = v["targets"].as_array().unwrap().iter().filter_map(|t| t["original"].as_str()).collect();
+    assert_eq!(originals, ["one", "three"]);
+}
+
+#[test]
+fn empty_document_gets_the_caret_paragraph() {
+    let mut s = session("");
+    let v = ctx(&mut s, "document", true).unwrap();
+    assert_eq!(v["targets"].as_array().map(Vec::len), Some(1));
+    let c = v.clone();
+    s.run("assistant.apply", &apply_req(&c, json!([{"index": 0, "text": "# Plan\n\nFirst step.", "markdown": true}]))).unwrap();
+    assert_eq!(body(&s), "Plan\nFirst step.");
+    assert_eq!(style_of(&s, 0).as_deref(), Some("Heading1"));
+}
+
+#[test]
+fn targets_describe_their_structure() {
+    let mut s = session("Title\nBody");
+    s.sel = Selection::caret(Pos::body(0, 0));
+    s.run("para.style", &json!({"style": "Heading 2"})).unwrap();
+    let v = ctx(&mut s, "document", true).unwrap();
+    assert_eq!(v["targets"][0]["structure"], "heading 2");
+    assert_eq!(v["targets"][1]["structure"], "paragraph");
+}
+
+#[test]
+fn markdown_turns_a_paragraph_into_a_heading_and_a_list_in_one_undo_step() {
+    let mut s = session("Intro\nTail");
+    let c = ctx(&mut s, "document", true).unwrap();
+    let r = s.run("assistant.apply", &apply_req(&c, json!([{"index": 0, "text": "# Overview\n\n- **first**\n- second", "markdown": true}]))).unwrap();
+    assert_eq!(body(&s), "Overview\nfirst\nsecond\nTail");
+    assert_eq!(style_of(&s, 0).as_deref(), Some("Heading1"));
+    let item = s.doc.para(StoryRef::Body, &Path::top(1)).unwrap();
+    assert!(item.props.numbering.is_some(), "a list item");
+    assert_eq!(item.props_at(0).bold, Some(true));
+    assert_eq!(style_of(&s, 3), None, "the next paragraph keeps its formatting");
+    // The second target moved by the two blocks the first one added, and can still be applied.
+    assert_eq!(r["context"]["targets"][1]["start"]["path"], json!([3]));
+    assert_eq!(r["context"]["targets"][0]["applied"], true);
+    s.run("assistant.apply", &apply_req(&r["context"], json!([{"index": 1, "text": "End"}]))).unwrap();
+    assert_eq!(body(&s), "Overview\nfirst\nsecond\nEnd");
+    s.run("edit.undo", &json!({})).unwrap();
+    s.run("edit.undo", &json!({})).unwrap();
+    assert_eq!(body(&s), "Intro\nTail");
+    assert_eq!(style_of(&s, 0), None);
+}
+
+#[test]
+fn markdown_emphasis_keeps_the_paragraph_and_its_fonts() {
+    let mut s = session("Quiet words here");
+    first_para(&mut s).format(0, 16, &|c| c.font = Some("Georgia".into())).unwrap();
+    s.sel = Selection::caret(Pos::body(0, 0));
+    s.run("para.style", &json!({"style": "Heading 2"})).unwrap();
+    let c = ctx(&mut s, "paragraph", true).unwrap();
+    s.run("assistant.apply", &apply_req(&c, json!([{"index": 0, "text": "## Quiet **loud** here", "markdown": true}]))).unwrap();
+    assert_eq!(body(&s), "Quiet loud here");
+    assert_eq!(style_of(&s, 0).as_deref(), Some("Heading2"));
+    let p = s.doc.para(StoryRef::Body, &Path::top(0)).unwrap();
+    assert_eq!(p.props_at(7).bold, Some(true));
+    assert_eq!(p.props_at(1).bold, None);
+}
+
+#[test]
+fn plain_markdown_keeps_body_paragraph_formatting_and_fonts() {
+    let mut s = session("Plain words");
+    first_para(&mut s).format(0, 11, &|c| c.font = Some("Georgia".into())).unwrap();
+    first_para(&mut s).props.align = Some(wordcraft_doc::Align::Center);
+    let c = ctx(&mut s, "paragraph", true).unwrap();
+    s.run("assistant.apply", &apply_req(&c, json!([{"index": 0, "text": "Plain *new* words", "markdown": true}]))).unwrap();
+    let p = s.doc.para(StoryRef::Body, &Path::top(0)).unwrap();
+    assert_eq!(p.text, "Plain new words");
+    assert_eq!(p.props.align, Some(wordcraft_doc::Align::Center));
+    assert_eq!(p.props_at(0).font.as_deref(), Some("Georgia"));
+    assert_eq!(p.props_at(7).italic, Some(true));
+}
+
+#[test]
+fn markdown_demotes_a_heading_to_body_text() {
+    let mut s = session("Loud");
+    s.run("para.style", &json!({"style": "Heading 1"})).unwrap();
+    let c = ctx(&mut s, "paragraph", true).unwrap();
+    s.run("assistant.apply", &apply_req(&c, json!([{"index": 0, "text": "Quiet", "markdown": true}]))).unwrap();
+    assert_eq!(style_of(&s, 0), None);
+}
+
+#[test]
+fn empty_markdown_merges_and_removes_paragraphs() {
+    let mut s = session("one\ntwo\nthree\nfour");
+    let c = ctx(&mut s, "document", true).unwrap();
+    let r = s
+        .run(
+            "assistant.apply",
+            &apply_req(&c, json!([{"index": 0, "text": "one and two", "markdown": true}, {"index": 1, "text": "", "markdown": true}])),
+        )
+        .unwrap();
+    assert_eq!(body(&s), "one and two\nthree\nfour");
+    assert_eq!(r["context"]["targets"][2]["start"]["path"], json!([1]));
+    s.run("assistant.apply", &apply_req(&r["context"], json!([{"index": 2, "text": "", "markdown": true}, {"index": 3, "text": "4"}]))).unwrap();
+    assert_eq!(body(&s), "one and two\n4");
+}
+
+#[test]
+fn empty_markdown_removes_the_first_paragraph() {
+    let mut s = session("one\ntwo");
+    let c = ctx(&mut s, "document", true).unwrap();
+    s.run("assistant.apply", &apply_req(&c, json!([{"index": 0, "text": "  ", "markdown": true}]))).unwrap();
+    assert_eq!(body(&s), "two");
+}
+
+#[test]
+fn markdown_in_a_selection_inserts_formatted_text_inline() {
+    let mut s = session("Say hello now");
+    select(&mut s, Pos::body(0, 4), Pos::body(0, 9));
+    let c = ctx(&mut s, "selection", false).unwrap();
+    s.run("assistant.apply", &apply_req(&c, json!([{"index": 0, "text": "**hi there**", "markdown": true}]))).unwrap();
+    let p = s.doc.para(StoryRef::Body, &Path::top(0)).unwrap();
+    assert_eq!(p.text, "Say hi there now");
+    assert_eq!(p.props_at(5).bold, Some(true));
+    assert_eq!(p.props_at(13).bold, None);
+}
+
+#[test]
+fn markdown_with_track_changes_is_tracked() {
+    let mut s = session("Intro\nTail");
+    s.doc.settings.track_changes = true;
+    let c = ctx(&mut s, "document", true).unwrap();
+    let r = s.run("assistant.apply", &apply_req(&c, json!([{"index": 0, "text": "# New\n\nMore", "markdown": true}]))).unwrap();
+    assert!(!s.doc.revisions.is_empty());
+    assert_eq!(r["context"]["targets"][0]["applied"], true);
+    assert!(s.run("assistant.apply", &apply_req(&r["context"], json!([{"index": 0, "text": "again", "markdown": true}]))).is_err());
+}
+
+#[test]
+fn markdown_refuses_control_characters_and_objects() {
+    let mut s = session("one");
+    let c = ctx(&mut s, "paragraph", true).unwrap();
+    for bad in ["a\u{0007}b", "a\u{FFFC}b"] {
+        assert!(s.run("assistant.apply", &apply_req(&c, json!([{"index": 0, "text": bad, "markdown": true}]))).is_err(), "{bad:?}");
+    }
+    assert_eq!(body(&s), "one");
+}

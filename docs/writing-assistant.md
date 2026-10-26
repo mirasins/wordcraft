@@ -6,7 +6,10 @@
 > composer, Spanish prompts, conditional connection error and local New conversation action are in
 > place. Focused assistant UI tests and `cargo check -p wordcraft-ui-egui --locked` passed; a dark
 > headless screenshot is available under the OpenCode temp directory. No authentication/backend
-> changes or live-account checks were made.
+> changes or live-account checks were made. **Landed (2026-10-26):** formatted and structural
+> suggestions (Markdown), a visible scope switch, a skippable whole-document warning instead of the
+> consent checkbox, and no console windows on Windows. Offline tests passed; no live-account check
+> was run for these changes.
 
 The writing assistant drafts, rewrites, translates and summarises text inside WordCraft. It uses
 the **official Claude Code CLI** (`claude`) and your own account. WordCraft has no API keys, no
@@ -36,7 +39,9 @@ The desktop app is required; the web build reports the assistant as unavailable.
 - **Mirai Assistant** in the right-click menu.
 - **Ctrl+Alt+Shift+A** on Windows and Linux, **Cmd+Option+Shift+A** on macOS.
 
-Opening the panel sends nothing and starts no process. **Escape** closes it (and cancels a
+Opening the panel sends nothing and starts no process. Claude Code runs hidden: on Windows no
+console window appears for the connection check or a request, and each request starts two
+processes (a sign-in check and the request), not three. **Escape** closes it (and cancels a
 running request). It docks to the right so the text under review stays visible.
 
 ## The panel
@@ -51,9 +56,11 @@ running request). It docks to the right so the text under review stays visible.
   answering. Rewrites remain proposals: applying one is always a separate, explicit action.
 - **Welcome:** left-aligned with a pink sparkle and three starter chips. A chip fills and focuses the
   draft; it does not send text. Requests and proposals remain in the scrollable conversation.
-- **Composer:** compact and pinned to the bottom. **Enter** sends, **Shift+Enter** inserts a line;
-  Ctrl/Cmd+Enter also sends. Enter during an IME composition is not submitted. Whole-document
-  consent remains explicit and visible for each request.
+- **Composer:** compact and pinned to the bottom. Above it, **Automatic**, **Selection** and
+  **Whole document** choose what is sent, and a line says what the next request will send.
+  **Enter** sends, **Shift+Enter** inserts a line; Ctrl/Cmd+Enter also sends. Enter during an IME
+  composition is not submitted. A request that sends the whole document first shows a warning;
+  Enter or Send again sends it.
 - **Writing options:** scope, model selection/custom id, whole-document context, connection check,
   tone and translation actions are folded away. Proposal review, Apply, Undo and Regenerate are
   available under each proposal's **Review changes** disclosure.
@@ -86,11 +93,17 @@ Only the text you choose is sent, and only when you press Send message or a writ
 | Section | The paragraphs of the body section that holds the caret |
 | Whole document | Every body paragraph |
 
-When the chosen scope covers every body paragraph in full (Automatic without a text selection,
-a one-section document in Section, or Whole document), the request needs your approval. The
-window shows an explicit consent checkbox for each request, and it is never remembered: after
-each request it is cleared and must be ticked again. The whole body is never sent implicitly.
-Adding **Include the whole document as context** needs the same approval.
+When the chosen scope covers the whole body (Automatic without a text selection, a one-section
+document in Section, or Whole document), or **Include the whole document as context** is on, the
+first Enter or Send shows a warning instead of sending. Enter or Send again sends that request;
+the next one warns again. Programmatic callers (control channel, MCP) still pass
+`confirm_document: true`.
+
+With Whole document and Section, empty paragraphs and paragraphs the assistant can't rewrite
+(pictures, equations, fields, tracked deletions, hidden text) are left out instead of refusing the
+request; their text is not sent. In an empty document the caret's paragraph is sent, so the
+assistant can write into it. The limits below still apply: a very long document is refused, so
+send a part of it.
 
 Limits: an instruction is at most 4,096 bytes; a request holds at most 64 KiB of text (instruction,
 targets and any document context together) and 256 paragraphs. Larger selections are refused, so
@@ -119,11 +132,25 @@ explanation is written in the interface language. Then:
 Apply works only while the proposal matches the document. If you edit the document, the buttons
 are disabled and the window asks you to regenerate. Each application is one undo step.
 
-Rewrites are per paragraph. The assistant cannot merge or split paragraphs, and it cannot edit
-fields or objects. When it changes a paragraph, only the changed middle is replaced: text that
-stays the same at the start and end keeps its formatting. Formatting inside the changed part is
-not reproduced exactly when the original mixed several formats, so check rewritten text that
-used bold, links or similar.
+A suggestion is plain or formatted:
+
+- **Plain** (wording changes): only the changed middle is replaced, so text that stays the same at
+  the start and end keeps its formatting. Formatting inside the changed part is not reproduced
+  exactly when the original mixed several formats.
+- **Formatted** (*Suggested (formatted)* in the review): Claude writes Markdown that replaces the
+  whole target. It can make headings, bulleted and numbered lists, bold, italic, strikethrough,
+  code, quotes and tables, split a paragraph into several, add paragraphs before or after it,
+  merge paragraphs, and remove a paragraph (*Suggested: remove this paragraph*). New body text
+  keeps the target's font and colour and, for body paragraphs, its alignment and spacing;
+  headings, lists, quotes and code take their styles. The review shows the Markdown as written
+  (`#`, `-`, `**`).
+
+Claude sees what each paragraph is (paragraph, heading level, list item, quote, code, table cell),
+so it can keep or change the structure. Questions about the document (for example *Summarize the
+main ideas*) are answered in the explanation, with no suggestions. Fields and objects are never
+edited. A formatted change is one undo step like any other application; with Track Changes the
+inserted and deleted text is tracked, but a paragraph style change (for example to a heading) is
+not.
 
 ## Cancelling and timeouts
 
@@ -164,3 +191,4 @@ closes it. This has not yet been checked with a screen reader on any platform.
 | 2026-10-25 | minor | Replaced the floating window with a resizable 280 pt right panel; Mirai palette, conditional connection-error card, left-aligned welcome, three draft-filling chips, compact pinned composer and Enter/Shift+Enter/IME handling. New conversation clears local UI state only; proposals retain review/apply/undo disclosures, whole-document consent and authentication/backend behavior are unchanged. Focused assistant tests (20 passed) and `cargo check -p wordcraft-ui-egui --locked` passed; dark headless screenshot reviewed |
 | 2026-10-25 | trivial | Reduced header noise: one-line italic Mirai wordmark in a dedicated dark-cyan capsule with light-lavender text, compact unframed connection status and text-only New conversation. Light theme keeps the capsule dark for contrast |
 | 2026-10-25 | minor | Automatic scope uses selected text, or the whole body when there is no text selection. Whole-body consent remains explicit; the panel's automatic-scope hint and send gate reflect this default. |
+| 2026-10-26 | minor | Formatted and structural suggestions (Markdown: headings, lists, emphasis, tables, split, merge, add and remove paragraphs) with the paragraph structure sent to Claude; Automatic/Selection/Whole document switch above the composer; a whole-document warning skipped with a second Enter replaces the consent checkbox; whole-document and section scopes leave out paragraphs that can't be rewritten; Claude Code runs without console windows on Windows, with one sign-in check per request. Offline tests only |

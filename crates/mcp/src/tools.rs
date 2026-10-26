@@ -190,11 +190,11 @@ pub fn tool_definitions() -> Value {
         tool(
             "assistant_apply",
             "Writing assistant apply",
-            "Apply suggestions from assistant_suggest as one undoable edit. Pass the context from assistant_context or assistant_suggest and changes [{index, text}].",
+            "Apply suggestions from assistant_suggest as one undoable edit. Pass the context from assistant_context or assistant_suggest and changes [{index, text, markdown?}]: plain text keeps the paragraph's formatting; markdown: true replaces the whole target with formatted blocks (headings, lists, emphasis, tables, several paragraphs), and empty Markdown removes it.",
             obj(
                 json!({
                     "context": {"type": "object", "description": "The context snapshot the suggestions were made for"},
-                    "changes": {"type": "array", "items": {"type": "object", "properties": {"index": {"type": "integer", "minimum": 0}, "text": {"type": "string"}}, "required": ["index", "text"]}}
+                    "changes": {"type": "array", "items": {"type": "object", "properties": {"index": {"type": "integer", "minimum": 0}, "text": {"type": "string"}, "markdown": {"type": "boolean"}}, "required": ["index", "text"]}}
                 }),
                 &["context", "changes"]
             ),

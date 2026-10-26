@@ -2,6 +2,10 @@
 
 > **Status:** implemented and checked end to end with a real, signed-in Claude Code account (Claude Code 2.1.310, Windows 11): connection check, a rewrite, word-by-word review, apply, undo and redo, through the desktop app (control channel), the headless MCP path and the client library. Repository gates: `cargo xtask ci` passed on 2026-10-23 (fmt, clippy, 3,981 tests, assets, layers, wasm). See [writing-assistant.md](writing-assistant.md)
 > for the user view. Follow-up review fixes passed `cargo xtask ci` on 2026-10-24 (3,984 tests; 8 ignored). Revision history is at the end.
+> **2026-10-26:** Markdown suggestions, structure descriptions, the warning that replaces the
+> consent checkbox, lenient whole-document scope and hidden console windows landed with offline
+> tests; `cargo xtask ci` passed on Windows on 2026-10-26 (8 gates, 4,610 tests, 8 ignored). No
+> live-account check was run.
 
 > **Upstream integration, 2026-10-24:** merged `upstream/main` at `254351c0` (79 commits), preserving
 > the writing assistant. Final `cargo xtask ci`: all 8 gates passed, 4,081 tests passed, 0 failed,
@@ -18,8 +22,8 @@
   the override variables (`ANTHROPIC_*`, `CLAUDE_CODE_USE_BEDROCK`, `CLAUDE_CODE_USE_VERTEX`,
   `CLAUDE_CODE_USE_FOUNDRY`, `AWS_BEARER_TOKEN_BEDROCK`); the parent environment is untouched.
 - Document text is data. It reaches the CLI only on stdin, as JSON, and the system prompt says so.
-- Nothing is sent before the consent rules pass, and nothing changes the document except
-  `assistant.apply` through the engine.
+- Nothing is sent before the consent rules pass (in the panel: a warning, then a second send),
+  and nothing changes the document except `assistant.apply` through the engine.
 - Never crash: no `unwrap`, `expect` or panics in these crates (see [AGENTS.md](../AGENTS.md)).
 
 ## Layers and files
@@ -71,9 +75,15 @@ Generation runs `claude` with these flags (`process.rs`, `GENERATION_ARGS`):
   no tools and no MCP servers
 - `--no-session-persistence`: no session files
 - `--permission-mode dontAsk --permission-prompts none`: no prompts can appear
+- On Windows the process is created with `CREATE_NO_WINDOW` (`process::run_claude`): `claude.exe`
+  is a console program and the release app has no console, so without it every check and request
+  flashed a console window
 
 The request payload goes to stdin. The flags are fixed apart from an optional, checked `--model`;
 without it the CLI's default model is used. `--bare` is not used because it would not use the account login.
+
+The panel and the headless MCP path call `Client::generate_with_auth`, which checks the sign-in
+and generates (two processes per request); they no longer run a separate `auth` first.
 
 Auth is checked with `claude --safe-mode auth status --json`. Only `authMethod` `claude.ai` (stored
 session probe) or `oauth_token` (environment token probe) with `loggedIn: true` is accepted, and
@@ -94,8 +104,15 @@ Limits (constants in `protocol.rs`, the engine's in `engine/src/assistant.rs`):
 | Auth timeout / generation timeout | 30 s / 120 s |
 
 Output is validated before use: envelope not an error, `structured_output` present, indices
-unique and in range, no control characters except tab (and newlines in the explanation), no
-object-replacement characters.
+unique and in range, no control characters except tab (and newlines in the explanation and in
+Markdown suggestions), no object-replacement characters.
+
+Protocol additions: `Request::structure` (one description per target, at most
+`MAX_STRUCTURE_BYTES` = 64 bytes each, sent as `structure` and omitted when empty) and
+`Suggestion::markdown` (optional `markdown` boolean in the output schema). The system prompt tells
+Claude to prefer plain suggestions for wording, to use Markdown for formatting and structure (empty
+Markdown removes a target, merging puts the text in one target and empties the others), and to
+answer questions in the explanation without suggestions.
 
 ## Engine: context and apply
 
@@ -109,6 +126,12 @@ Consent: `confirm_document: true` is required whenever the chosen scope covers e
 paragraph in full (`document`, `auto` without a selection, a one-section `section`, or any other
 scope that covers the whole body). No whole body is ever sent implicitly.
 
+`document` and `section` leave out empty paragraphs and paragraphs `selection`/`paragraph` would
+refuse (objects, fields, tracked deletions, hidden text) through `Collector::add_rewritable`; if
+nothing is left, the caret's paragraph is the one target. Every target carries `structure`
+(`paragraph`, `heading 2`, `bulleted list item, level 1`, `…, in a table cell`) from
+`wordcraft_formats::model::para_kind`.
+
 `assistant.apply {context, changes}` validates everything before changing anything:
 
 - `document_id` and `revision` must match the session, else the caller must read the context again.
@@ -118,6 +141,15 @@ scope that covers the whole body). No whole body is ever sent implicitly.
   again; their original text is not rechecked because tracked deletions remain in the paragraph.
 - Each change is reduced to its differing middle (common prefix and suffix are kept).
 - Changes apply last-paragraph-first, as one undoable step through `Session::run`.
+- A change with `markdown: true` replaces its whole target range: the Markdown is imported
+  (`paste::markdown_fragment`), plain paragraphs take the target's character formatting under the
+  Markdown's emphasis (and the paragraph formatting of a plain body paragraph), and the fragment
+  goes in through `paste::insert` (so Track Changes marks it). A whole-paragraph target then takes
+  the first block's paragraph properties (heading, list, or plain again). Empty Markdown removes
+  the target: joined to the paragraph before it, else `remove_block` (never a paragraph holding a
+  section break). Blocks added or removed are counted per container, and the returned context
+  moves later targets' paths by that count (`Shift`). Markdown targets are marked `applied`;
+  applied targets are left out of the one-target-per-paragraph check.
 
 On success it returns an updated context: the new `revision` and new target `original` texts and
 `end` offsets, so the UI can apply the pending targets of a proposal one after another. With
@@ -147,8 +179,15 @@ Known limits of the process handling (from a review of `process.rs` and `client.
   that arrives after cancel is discarded and says so.
 - Context is taken on the UI thread through `assistant.context` before the thread starts. Whole
   document context is a second `assistant.context` call with `document` scope.
-- The consent checkbox is shown for every request, never persisted, and cleared after each request.
+- No consent checkbox: when `sends_whole_document` holds (scope `document`, `auto` without a text
+  selection, `section` in a one-section document, or whole-document context), the first send sets
+  `State::warned` and shows the warning instead of sending; the next send passes
+  `confirm_document: true` and clears it. Changing the scope or New conversation clears it.
   Errors from start, poll and apply are shown in the panel.
+- `scope_bar` above the composer switches Automatic, Selection and Whole document and says what
+  the next request sends. `assistant.accept` passes each suggestion's `markdown` flag to
+  `assistant.apply`; the review labels Markdown as *Suggested (formatted)* or *Suggested: remove
+  this paragraph*.
 - History: `VecDeque` of proposals, newest first, trimmed to 8 entries and 1 MiB of estimated size.
   Nothing is persisted.
 - Regenerate keeps the user's original instruction and explicit explain-only mode; the explanation
@@ -248,6 +287,7 @@ unchanged target does not cause the whole apply batch to be refused.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | Markdown suggestions (`Suggestion::markdown`, engine apply with block shifts and removal), `Request::structure`, lenient document/section scopes, warning instead of the consent checkbox, visible scope switch, `CREATE_NO_WINDOW` on Windows and one auth check per request. `cargo xtask ci` passed on Windows (8 gates, 4,610 tests, 8 ignored); no live-account check |
 | 2026-10-25 | minor | Reworked the UI into a docked, resizable 280 pt right panel. Mirai palette tokens, conditional error card, draft-filling welcome chips, fixed compact composer, Enter/Shift+Enter with IME protection, and UI-only New conversation; review/apply/undo and backend/auth contracts retained. Focused tests and native `cargo check` passed; headless dark screenshot reviewed |
 | 2026-10-23 | major | First version: draft implementation. Not yet compiled in the repository gates, not run against a live account |
 | 2026-10-23 | minor | `assistant` moved to L4; `Provider` trait and `--model`; live validation; process limits documented; `apiProvider` check; word diff; tests and gates updated |
