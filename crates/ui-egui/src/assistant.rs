@@ -629,9 +629,9 @@ pub fn show(app: &mut WordApp, ui: &mut egui::Ui, ctx: &egui::Context) {
     let escape = !egui::Popup::is_any_open(ctx) && ctx.input(|i| i.key_pressed(egui::Key::Escape));
     let live = (app.session.document_id(), app.session.rev());
     let has_text_selection = !app.session.sel.is_collapsed();
-    let one_section = app.session.doc.sections().len() <= 1;
-    let events = ctx.input(|input| input.events.clone());
-    let ime_event_this_frame = update_ime_composition(&mut app.assistant, &events);
+    // Sections are paragraphs carrying a section break; avoid allocating the sections Vec each frame.
+    let one_section = !app.session.doc.body.iter().any(|block| block.as_ref().as_para().and_then(|para| para.section.as_ref()).is_some());
+    let ime_event_this_frame = ctx.input(|input| update_ime_composition(&mut app.assistant, &input.events));
     let tokens = crate::theme::Tokens::get(ctx);
     let frame = egui::Frame::new()
         .fill(tokens.assistant_background)
@@ -1613,6 +1613,18 @@ mod tests {
     }
 
     #[test]
+    fn ime_preedit_and_commit_in_one_frame_suppress_enter() {
+        let mut state = State::default();
+        let events = [
+            egui::Event::Ime(egui::ImeEvent::Preedit { text: "a".into(), active_range_chars: None }),
+            egui::Event::Ime(egui::ImeEvent::Commit("a".into())),
+        ];
+        assert!(update_ime_composition(&mut state, &events));
+        assert!(!state.ime_composing);
+        assert!(!should_send_on_enter(egui::Modifiers::NONE, state.ime_composing, true));
+    }
+
+    #[test]
     fn composer_warns_once_for_the_whole_document_and_keeps_the_custom_model() {
         let mut app = reviewed_app();
         let state = &mut app.assistant;
@@ -1635,6 +1647,34 @@ mod tests {
         assert!(!sends_whole_document(state, true, false));
         state.scope = "selection".into();
         assert!(!sends_whole_document(state, false, true));
+    }
+
+    #[test]
+    fn section_count_fast_path_matches_document_sections() {
+        use wordcraft_doc::{Document, Path, StoryRef};
+
+        let mut empty = Document::new();
+        empty.body.clear();
+
+        let mut one_marker = Document::from_text("first\nsecond\nthird");
+        one_marker.para_mut(StoryRef::Body, &Path::top(0)).unwrap().section = Some(Box::default());
+
+        let multiple_paragraphs = Document::from_text("first\nsecond\nthird");
+
+        let mut marker_on_final_paragraph = Document::from_text("first\nlast");
+        marker_on_final_paragraph.para_mut(StoryRef::Body, &Path::top(1)).unwrap().section = Some(Box::default());
+
+        let cases = [
+            ("empty body", empty, true),
+            ("one section marker", one_marker, false),
+            ("multiple paragraphs without markers", multiple_paragraphs, true),
+            ("marker on final paragraph", marker_on_final_paragraph, false),
+        ];
+        for (name, doc, expected) in cases {
+            let optimized = !doc.body.iter().any(|block| block.as_ref().as_para().and_then(|para| para.section.as_ref()).is_some());
+            assert_eq!(optimized, doc.sections().len() <= 1, "fast path diverges for {name}");
+            assert_eq!(optimized, expected, "unexpected classification for {name}");
+        }
     }
 
     #[test]

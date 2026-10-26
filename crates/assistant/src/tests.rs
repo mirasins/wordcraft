@@ -282,6 +282,37 @@ fn error_result_is_classified_before_structured_parse() {
 }
 
 #[test]
+fn response_classification_preserves_error_probe_schema_rules() {
+    let huge_content = "x".repeat(48 * 1024);
+    let cases = [
+        (format!(r#"{{"is_error":true,"api_error_status":401,"structured_output":"{huge_content}"}}"#), Error::Authentication),
+        (format!(r#"{{"is_error":true,"api_error_status":403,"structured_output":"{huge_content}"}}"#), Error::Authentication),
+        (format!(r#"{{"is_error":true,"api_error_status":429,"structured_output":"{huge_content}"}}"#), Error::Quota),
+        (format!(r#"{{"is_error":true,"api_error_status":500,"structured_output":"{huge_content}"}}"#), Error::Network),
+        (format!(r#"{{"is_error":true,"structured_output":"{huge_content}"}}"#), Error::Failed),
+        // The legacy probe rejects malformed recognized fields before parsing structured output,
+        // even when the error flag is false or a valid success output is present.
+        (r#"{"is_error":false,"api_error_status":"429","structured_output":{"suggestions":[],"explanation":""}}"#.to_owned(), Error::InvalidResponse),
+        (r#"{"is_error":"true","api_error_status":429,"structured_output":{"suggestions":[],"explanation":""}}"#.to_owned(), Error::InvalidResponse),
+        (r#"{"is_error":true,"api_error_status":"429","structured_output":"bad"}"#.to_owned(), Error::InvalidResponse),
+        (r#"{"is_error":true,"api_error_status":null,"structured_output":"bad"}"#.to_owned(), Error::Failed),
+    ];
+
+    for (fixture, expected) in cases {
+        assert!(fixture.len() <= crate::MAX_OUTPUT_BYTES, "fixture exceeds output cap");
+        assert_eq!(parse_response(fixture.as_bytes(), 1).map(|_| ()), Err(expected), "{fixture}");
+    }
+
+    // Unknown top-level fields (including an unknown spelling of the flag) remain ignored.
+    let success_with_unknown_fields = br#"{"isError":true,"unknown_flag":false,"structured_output":{"suggestions":[],"explanation":"ok"}}"#;
+    assert_eq!(parse_response(success_with_unknown_fields, 1).map(|r| r.explanation), Ok("ok".to_owned()));
+
+    for fixture in [r#"[]"#, "null", r#"{"structured_output":[]}"#] {
+        assert_eq!(parse_response(fixture.as_bytes(), 1).map(|_| ()), Err(Error::InvalidResponse), "{fixture}");
+    }
+}
+
+#[test]
 fn response_rejects_out_of_range_duplicate_and_unsafe_text() {
     let out_of_range = success(r#"{"suggestions":[{"index":5,"text":"x"}],"explanation":""}"#);
     assert_eq!(parse_response(&out_of_range, 2).map(|_| ()), Err(Error::InvalidResponse));

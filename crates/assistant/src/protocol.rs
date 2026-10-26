@@ -230,6 +230,10 @@ pub(crate) fn prompt_payload(request: &Request) -> Result<String, Error> {
 #[derive(Deserialize)]
 struct Envelope {
     #[serde(default)]
+    is_error: bool,
+    #[serde(default)]
+    api_error_status: Option<u16>,
+    #[serde(default)]
     structured_output: Option<Output>,
 }
 
@@ -265,11 +269,21 @@ pub(crate) fn parse_response(bytes: &[u8], target_count: usize) -> Result<Respon
     if bytes.len() > MAX_OUTPUT_BYTES {
         return Err(Error::InvalidResponse);
     }
-    let probe: ErrorProbe = serde_json::from_slice(bytes).map_err(|_| Error::InvalidResponse)?;
-    if probe.is_error {
-        return Err(error_for_status(probe.api_error_status));
+    let envelope: Envelope = match serde_json::from_slice(bytes) {
+        Ok(envelope) => envelope,
+        Err(_) => {
+            // Preserve error priority when the structured output is malformed. The probe keeps
+            // the old classification rules, including rejecting malformed error fields.
+            let probe: ErrorProbe = serde_json::from_slice(bytes).map_err(|_| Error::InvalidResponse)?;
+            if probe.is_error {
+                return Err(error_for_status(probe.api_error_status));
+            }
+            return Err(Error::InvalidResponse);
+        }
+    };
+    if envelope.is_error {
+        return Err(error_for_status(envelope.api_error_status));
     }
-    let envelope: Envelope = serde_json::from_slice(bytes).map_err(|_| Error::InvalidResponse)?;
     let output = envelope.structured_output.ok_or(Error::InvalidResponse)?;
     if output.suggestions.len() > target_count || output.explanation.len() > MAX_EXPLANATION_BYTES || has_forbidden(&output.explanation, true) {
         return Err(Error::InvalidResponse);
