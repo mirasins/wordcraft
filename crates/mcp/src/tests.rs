@@ -47,7 +47,7 @@ fn mirai_metadata_survives_multi_document_dispatch() {
         } else {
             json!({"doc": u64::MAX, "command": "assistant.suggest", "params": {"instruction": "Rewrite"}})
         };
-        assert!(backend.call(method, params).is_err());
+        assert!(backend.call(method, params).unwrap_err().contains("no open document has id"));
         assert_eq!(backend.session.document_id(), active);
     }
 

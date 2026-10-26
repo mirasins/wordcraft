@@ -152,6 +152,7 @@ Small follow-ups from the 2026-10-25 field, table and AutoFormat batch (#4232):
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | trivial | Mirai/upstream 02120c84 synchronization: assistant MCP document routing and per-window state covered by merge regression tests; readiness estimates unchanged |
 | 2026-10-26 | trivial | Integrated upstream/main 7583871d (security authority checks, egui 0.37); retained the Mirai Assistant with official Claude Code authentication and explicit consent for automatic whole-body scope. Windows per-user MSI packaging preserved; cargo xtask ci passed all 8 gates. No installer build or live-account check. |
 | 2026-10-25 | trivial | Gap 25: Mirai Assistant is now a resizable 280 pt right panel with the fork palette, conditional connection error, left-aligned welcome, draft-filling starter chips and compact pinned composer. Review/apply/undo and explicit consent remain; no authentication/backend changes. Focused UI tests and `cargo check -p wordcraft-ui-egui --locked` passed |
 | 2026-10-24 | trivial | Gap 25: the writing assistant is renamed Mirai Assistant (window, ribbon, context menu, command labels, 26 translation overlays); the draft takes 40% of the window while the conversation is empty and 24% after (was capped at 160px), quick actions are chips above it, Ctrl/Cmd+Enter sends, and its palette and radii come from the owner's design system; `cargo xtask ci` passed (8 gates), headless light and dark screenshots reviewed; readiness estimates unchanged |

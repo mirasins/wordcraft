@@ -180,17 +180,17 @@ pub fn tool_definitions() -> Value {
             "assistant_context",
             "Writing assistant context",
             "What the writing assistant would work on: document id, revision, scope and target ranges with their original text. Local only; nothing is sent to a provider. `auto` uses selected text, or the whole body with no selection. Any whole-body scope needs confirm_document: true.",
-            obj(
+            with_doc(obj(
                 json!({"scope": {"type": "string", "enum": ["auto", "selection", "paragraph", "section", "document"], "description": "Default auto: selected text, or the whole body when no text is selected"}, "confirm_document": {"type": "boolean", "description": "Explicit consent required whenever the scope covers the whole body"}}),
                 &[]
-            ),
+            )),
             true
         ),
         tool_world(
             "assistant_suggest",
             "Writing assistant suggest",
             "Ask the writing assistant (your Claude Code account) for rewrites of the targets. `auto` uses selected text, or the whole body when nothing is selected. Sends the instruction and target text to the provider; any whole-body scope and include_document_context require explicit confirm_document: true. Does not change the document: apply with assistant_apply. explain_only returns an explanation with no suggestions.",
-            obj(
+            with_doc(obj(
                 json!({
                     "instruction": s("What to do with the text"),
                     "scope": {"type": "string", "enum": ["auto", "selection", "paragraph", "section", "document"], "description": "Default auto: selected text, or the whole body when no text is selected"},
@@ -200,7 +200,7 @@ pub fn tool_definitions() -> Value {
                     "model": {"type": "string", "description": "Claude model alias or id (sonnet, opus, haiku, claude-opus-5-5…); omit for Claude Code's default"}
                 }),
                 &["instruction"]
-            ),
+            )),
             true,
             true
         ),
@@ -208,13 +208,13 @@ pub fn tool_definitions() -> Value {
             "assistant_apply",
             "Writing assistant apply",
             "Apply suggestions from assistant_suggest as one undoable edit. Pass the context from assistant_context or assistant_suggest and changes [{index, text, markdown?}]: plain text keeps the paragraph's formatting; markdown: true replaces the whole target with formatted blocks (headings, lists, emphasis, tables, several paragraphs), and empty Markdown removes it.",
-            obj(
+            with_doc(obj(
                 json!({
                     "context": {"type": "object", "description": "The context snapshot the suggestions were made for"},
                     "changes": {"type": "array", "items": {"type": "object", "properties": {"index": {"type": "integer", "minimum": 0}, "text": {"type": "string"}, "markdown": {"type": "boolean"}}, "required": ["index", "text"]}}
                 }),
                 &["context", "changes"]
-            ),
+            )),
             false
         ),
     ])
@@ -367,13 +367,14 @@ pub fn call_tool(b: &mut dyn Backend, name: &str, a: &Value) -> ToolResult {
         "click" => wrap(b.call("ui.click", a.clone())),
         "key" => wrap(b.call("ui.key", a.clone())),
         "ui_inspect" => wrap(b.call("ui.inspect", json!({}))),
-        "assistant_context" => wrap(exec(b, "assistant.context", pick(a, &["scope", "confirm_document"]))),
+        "assistant_context" => wrap(exec(b, "assistant.context", pick(a, &["scope", "confirm_document"]), doc)),
         "assistant_suggest" => wrap(exec(
             b,
             "assistant.suggest",
             pick(a, &["instruction", "scope", "confirm_document", "include_document_context", "explain_only", "model"]),
+            doc,
         )),
-        "assistant_apply" => wrap(exec(b, "assistant.apply", pick(a, &["context", "changes"]))),
+        "assistant_apply" => wrap(exec(b, "assistant.apply", pick(a, &["context", "changes"]), doc)),
         other => ToolResult::error(format!("unknown tool `{other}`")),
     }
 }
@@ -489,6 +490,19 @@ mod tests {
         assert_eq!(method, "engine.execute");
         assert_eq!(call["command"], json!("assistant.suggest"));
         assert_eq!(call["params"], json!({"instruction": "Shorten", "explain_only": true, "scope": "paragraph"}));
+    }
+
+    #[test]
+    fn assistant_tools_advertise_and_forward_the_document() {
+        for name in ["assistant_context", "assistant_suggest", "assistant_apply"] {
+            assert_eq!(definition(name)["inputSchema"]["properties"]["doc"]["type"], json!("integer"));
+            let mut backend = Recording { seen: None };
+            let result = call_tool(&mut backend, name, &json!({"doc": 7, "instruction": "Rewrite"}));
+            assert!(!result.is_error);
+            let (_, call) = backend.seen.expect("called");
+            assert_eq!(call["doc"], json!(7));
+            assert!(call["params"].get("doc").is_none());
+        }
     }
 
     #[test]

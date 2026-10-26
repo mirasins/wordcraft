@@ -10852,6 +10852,7 @@ fn export_png_refuses_a_path_that_is_not_png() {
 #[test]
 fn ime_body_epoch_marks_body_replacements_not_edits() {
     let mut s = s();
+    let document_id = s.document_id();
     run(&mut s, "text.insert", json!({"text": "one"}));
     let first = s.ime_body_epoch();
     run(&mut s, "text.insert", json!({"text": " two"}));
@@ -10860,7 +10861,7 @@ fn ime_body_epoch_marks_body_replacements_not_edits() {
     run(&mut s, "document.setText", json!({"text": "same text"}));
     let replaced = s.ime_body_epoch();
     assert!(replaced > first, "setText replaces the body under the same document id");
-    assert_eq!(s.document_id(), 1, "the document id itself is unchanged");
+    assert_eq!(s.document_id(), document_id, "the document id itself is unchanged");
 
     // The same text again still replaces the body: a composition must not survive on content
     // equality.
