@@ -20,7 +20,7 @@ const HISTORY_BYTES: usize = 1024 * 1024;
 /// Contributor-provided original artwork, embedded for offline/portable builds. Decode only
 /// once per egui context (including a failed decode); no filesystem or provider access.
 pub(crate) fn icon_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
-    let id = egui::Id::new("writing-assistant-artwork");
+    let id = egui::Id::unique("writing-assistant-artwork");
     if let Some(cached) = ctx.data(|data| data.get_temp::<Option<egui::TextureHandle>>(id)) {
         return cached;
     }
@@ -37,7 +37,7 @@ pub(crate) fn icon_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
 /// egui context; the source PNG is colour-keyed to transparent because it was supplied on an
 /// opaque background.
 pub(crate) fn logo_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
-    let id = egui::Id::new("mirai-assistant-logo");
+    let id = egui::Id::unique("mirai-assistant-logo");
     if let Some(cached) = ctx.data(|data| data.get_temp::<Option<egui::TextureHandle>>(id)) {
         return cached;
     }
@@ -916,7 +916,7 @@ fn welcome(ui: &mut egui::Ui, state: &mut State) {
 fn request(ui: &mut egui::Ui, state: &mut State, has_text_selection: bool, ime_event_this_frame: bool, action: &mut Action) {
     let tokens = crate::theme::Tokens::get(ui.ctx());
     let can_send = may_send(state, has_text_selection) && !state.instruction.trim().is_empty();
-    let field_id = egui::Id::new("assistant-instruction");
+    let field_id = egui::Id::unique("assistant-instruction");
     let sends_enter = can_send
         && ui.memory(|memory| memory.has_focus(field_id))
         && ui.input_mut(|input| {
@@ -1206,7 +1206,7 @@ mod tests {
     #[test]
     fn proposal_keeps_the_users_instruction_and_explain_mode_for_regenerate() {
         let mut app = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("Hello there.\nSecond.")), Default::default());
-        let context = app.session.run("assistant.context", &json!({"scope":"auto"})).unwrap();
+        let context = app.session.run("assistant.context", &json!({"scope":"auto","confirm_document":true})).unwrap();
         let (sender, receiver) = std::sync::mpsc::channel();
         app.assistant.pending = Some(Pending {
             cancel: Arc::new(AtomicBool::new(false)),

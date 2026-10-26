@@ -34,6 +34,7 @@
 //! - [`get`]: one context's translation only, never the plain row (`spacing`'s "Open").
 //! - [`location`]: a ribbon location such as `Home › Font`, segment by segment.
 //! - [`fmt`]: fill `{name}` placeholders after a lookup; translators may reorder them.
+//! - [`fmt_plain`]: [`fmt`] without bidi isolate marks, for text that goes into the document.
 
 use std::cell::Cell;
 use std::sync::{LazyLock, OnceLock};
@@ -43,7 +44,7 @@ use craft_i18n::I18n;
 #[cfg(test)]
 mod assistant_catalog;
 
-pub use craft_i18n::fmt;
+pub use craft_i18n::{fmt, fmt_plain};
 
 include!(concat!(env!("OUT_DIR"), "/craft_i18n.rs"));
 
@@ -84,6 +85,8 @@ pub static LANGUAGES: [LangInfo; 27] = [
     LangInfo { code: "ko", prefer_hans: false, editing_lang: None },
     LangInfo { code: "uk", prefer_hans: false, editing_lang: None },
     // Spanish, neutral across Spain and Latin America; `es-ES`, `es-MX`, `es-419` … resolve here.
+    // No fixed editing language: new documents are written in the region's Spanish
+    // (`Session::region_spanish`), like English.
     LangInfo { code: "es", prefer_hans: false, editing_lang: None },
     // Brazilian Portuguese; `pt-BR` and `pt-BR-*` resolve here. Plain `pt` and `pt-PT` have no
     // catalog yet (the European vocabulary differs), so they stay in English ([`lang_from_tag`]).

@@ -785,7 +785,13 @@ fn merge_fields(doc: &Document) -> Vec<String> {
 }
 
 fn mergefield_name(instr: &str) -> Option<String> {
-    let rest = instr.trim().strip_prefix("MERGEFIELD")?.trim();
+    // The field type ignores case and ends at a space or a quote, so `MERGEFIELDX` is another field.
+    let t = instr.trim();
+    let (kind, rest) = t.split_at_checked(t.find(|c: char| c.is_whitespace() || c == '"').unwrap_or(t.len()))?;
+    if !kind.eq_ignore_ascii_case("MERGEFIELD") {
+        return None;
+    }
+    let rest = rest.trim();
     let name = if let Some(r) = rest.strip_prefix('"') { r.split('"').next().unwrap_or("") } else { rest.split_whitespace().next().unwrap_or("") };
     Some(name.to_string())
 }
@@ -840,11 +846,15 @@ enum Act {
     Skip,
 }
 
+/// The merge field a rule tests: the name in its first nested field, if that is a MERGEFIELD.
+fn rule_field(t: &str) -> Option<String> {
+    mergefield_name(t.split_once('{').and_then(|(_, r)| r.split('}').next())?)
+}
+
 /// Comparison of a rule condition `{ MERGEFIELD X } op "value" …` (IF, SKIPIF, NEXTIF) for
 /// `row`: whether it holds, and the quoted texts after the value (IF's true / false text).
 fn condition<'a>(s: &Session, t: &'a str, row: usize) -> (bool, Vec<&'a str>) {
-    let inner = t.split_once('{').and_then(|(_, r)| r.split('}').next()).unwrap_or("");
-    let field = mergefield_name(inner).unwrap_or_default();
+    let field = rule_field(t).unwrap_or_default();
     let rest = t.split_once('}').map(|(_, r)| r).unwrap_or("");
     let op: String = rest.trim_start().chars().take_while(|c| matches!(c, '<'..='>')).collect();
     let mut quoted = rest.split('"').skip(1).step_by(2);
@@ -887,7 +897,7 @@ fn act(s: &Session, instr: &str, row: usize) -> Option<Act> {
         "SKIPIF" if condition(s, t, row).0 => Act::Skip,
         "NEXTIF" | "SKIPIF" => Act::Text(String::new()),
         // IF { MERGEFIELD X } = "v" "then" "else" (an IF on other fields isn't ours to touch).
-        "IF" if t.contains("MERGEFIELD") => {
+        "IF" if rule_field(t).is_some() => {
             let (holds, texts) = condition(s, t, row);
             Act::Text(texts.get(if holds { 0 } else { 1 }).copied().unwrap_or("").to_string())
         }
@@ -904,7 +914,7 @@ fn placeholder(instr: &str) -> Option<String> {
         "ADDRESSBLOCK" => Some("«AddressBlock»".into()),
         "GREETINGLINE" => Some("«GreetingLine»".into()),
         "NEXT" | "NEXTIF" | "SKIPIF" | "MERGEREC" => Some(String::new()),
-        "IF" if instr.contains("MERGEFIELD") => Some(String::new()),
+        "IF" if rule_field(instr).is_some() => Some(String::new()),
         _ => None,
     }
 }
@@ -1501,10 +1511,84 @@ mod tests {
         assert_eq!(parse_csv("a;b\n1;2")[1], vec!["1", "2"]);
     }
 
+    /// #4001: finishing a merge opens a new document, with a new undo history. It is not an
+    /// edit of the open document, even when the merged document holds the same content.
+    #[test]
+    fn finishing_a_merge_opens_a_new_document_with_a_new_history() {
+        let mut s = Session::new(Document::from_text("Hello"));
+        s.run("text.insert", &json!({"text": "!"})).unwrap();
+        assert_eq!(s.undo_depth(), 1);
+        s.run("caret.docStart", &json!({})).unwrap();
+        // One recipient and no merge fields: the merged document holds the same content.
+        s.run("mailings.recipients", &json!({"rows": [{"Name": "Ada"}]})).unwrap();
+        let id = s.document_id();
+        s.run("mailings.finish", &json!({})).unwrap();
+        assert_ne!(s.document_id(), id, "the document was replaced");
+        assert_eq!(s.doc.plain_text(StoryRef::Body), "!Hello");
+        assert_eq!(s.undo_depth(), 0, "the new document starts with an empty undo history");
+        // Undo cannot bring the old document's text back.
+        s.run("edit.undo", &json!({})).unwrap();
+        assert_eq!(s.doc.plain_text(StoryRef::Body), "!Hello", "the old text does not come back");
+    }
+
+    /// #4004: finishing a merge to a file saves the merged copy there and leaves the open
+    /// document alone: it changes nothing, so it is not an edit.
+    #[test]
+    fn finishing_a_merge_to_a_file_is_not_an_edit() {
+        let dir = std::env::temp_dir().join(format!("wordcraft-merge-to-file-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let out = dir.join("merged.docx");
+        let mut s = Session::new(Document::from_text("Hello"));
+        s.run("text.insert", &json!({"text": "!"})).unwrap();
+        s.run("mailings.recipients", &json!({"rows": [{"Name": "Ada"}]})).unwrap();
+        let (depth, dirty, text) = (s.undo_depth(), s.dirty, s.doc.plain_text(StoryRef::Body));
+        s.run("mailings.finish", &json!({"path": out.to_string_lossy()})).unwrap();
+        assert!(out.exists(), "the merged copy was written");
+        assert_eq!(s.doc.plain_text(StoryRef::Body), text, "the open document is unchanged");
+        assert_eq!(s.undo_depth(), depth, "no undo step");
+        assert_eq!(s.dirty, dirty, "the unsaved-changes flag is unchanged");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     #[test]
     fn csv_delimiter_ignores_quoted_text() {
         let r = parse_csv("\"Name, first, last\";City\nAnn;Paris\n");
         assert_eq!(r, vec![vec!["Name, first, last", "City"], vec!["Ann", "Paris"]]);
+    }
+
+    /// Field types ignore case (ECMA-376 Part 1, 17.16.1), and `MERGEFIELDX` is another field.
+    #[test]
+    fn merge_field_types_ignore_case() {
+        assert_eq!(mergefield_name(" mergefield City ").as_deref(), Some("City"));
+        assert_eq!(mergefield_name(r#"MergeField "First Name""#).as_deref(), Some("First Name"));
+        assert_eq!(mergefield_name(r#"MERGEFIELD"City""#).as_deref(), Some("City"));
+        assert_eq!(mergefield_name("MERGEFIELDX City"), None);
+        assert_eq!(placeholder("mergefield City").as_deref(), Some("«City»"));
+        assert_eq!(placeholder(r#"if { mergefield City } = "x" "y" "z""#).as_deref(), Some(""));
+        let mut s = Session::new(Document::new());
+        s.run("mailings.recipients", &json!({"rows": [{"Name": "Alpha"}, {"Name": "Beta"}]})).unwrap();
+        s.run("mailings.start", &json!({"kind": "directory"})).unwrap();
+        s.run("insert.field", &json!({"instr": "mergefield Name", "result": ""})).unwrap();
+        s.run("insert.field", &json!({"instr": r#"if { mergefield Name } = "Beta" " (b)" """#, "result": ""})).unwrap();
+        s.run("mailings.finish", &json!({})).unwrap();
+        assert_eq!(s.doc.plain_text(StoryRef::Body), "Alpha\nBeta (b)");
+    }
+
+    /// An IF is a merge rule only when the field it tests is a MERGEFIELD: the word in a quoted
+    /// value doesn't make `IF { PAGE } = "mergefield" …` one.
+    #[test]
+    fn an_if_on_another_field_is_not_a_merge_rule() {
+        let other = r#"IF { PAGE } = "mergefield" "yes" "no""#;
+        assert_eq!(placeholder(other), None);
+        assert_eq!(placeholder(r#"IF { PAGE } = { MERGEFIELD City } "yes" "no""#), None);
+        assert_eq!(placeholder(r#"IF { MERGEFIELD City } = "mergefield" "yes" "no""#).as_deref(), Some(""));
+        let mut s = Session::new(Document::new());
+        s.run("mailings.recipients", &json!({"rows": [{"Name": "Alpha"}]})).unwrap();
+        s.run("mailings.start", &json!({"kind": "directory"})).unwrap();
+        s.run("insert.field", &json!({"instr": "mergefield Name", "result": ""})).unwrap();
+        s.run("insert.field", &json!({"instr": other, "result": " kept"})).unwrap();
+        s.run("mailings.finish", &json!({})).unwrap();
+        assert_eq!(s.doc.plain_text(StoryRef::Body), "Alpha kept");
     }
 
     #[test]
