@@ -32,6 +32,35 @@ fn lifecycle_and_tools() {
 }
 
 #[test]
+fn mirai_metadata_survives_multi_document_dispatch() {
+    use crate::Backend;
+
+    let mut backend = Headless::default();
+    let commands = backend.call("engine.commands", json!({})).unwrap();
+    assert!(commands.as_array().unwrap().iter().any(|command| command["id"] == "assistant.suggest"));
+
+    let active = backend.session.document_id();
+    // Validate the document before parsing the request or starting a Claude process.
+    for method in ["assistant.suggest", "engine.execute", "command"] {
+        let params = if method == "assistant.suggest" {
+            json!({"doc": u64::MAX, "instruction": "Rewrite"})
+        } else {
+            json!({"doc": u64::MAX, "command": "assistant.suggest", "params": {"instruction": "Rewrite"}})
+        };
+        assert!(backend.call(method, params).is_err());
+        assert_eq!(backend.session.document_id(), active);
+    }
+
+    // All three entry points still reach Mirai's own validation on a valid document.
+    for method in ["assistant.suggest", "engine.execute", "command"] {
+        let params =
+            if method == "assistant.suggest" { json!({"doc": active}) } else { json!({"doc": active, "command": "assistant.suggest", "params": {}}) };
+        assert!(backend.call(method, params).unwrap_err().contains("instruction"));
+        assert_eq!(backend.session.document_id(), active);
+    }
+}
+
+#[test]
 fn agent_writes_a_formatted_document() {
     let mut s = Server::new(Box::new(Headless::default()));
     tool(&mut s, "new_document", json!({}));
@@ -312,4 +341,46 @@ fn over_long_request_line_is_rejected_and_serving_continues() {
     assert_eq!(lines.len(), 2, "{text}");
     assert!(lines[0].contains("too long"), "{}", lines[0]);
     assert!(lines[1].contains(r#""id":5"#), "{}", lines[1]);
+}
+
+/// W1: with several documents open, `doc` sends a tool to one of them; the active document stays
+/// active and unchanged, and an id that names no open document is an error.
+#[test]
+fn tools_address_an_open_document_by_id() {
+    let mut s = Server::new(Box::new(Headless::default()));
+    let first = tool(&mut s, "new_document", json!({}))["id"].as_u64().expect("new_document gives the id");
+    tool(&mut s, "type_text", json!({"text": "First"}));
+    let second = tool(&mut s, "new_document", json!({}))["id"].as_u64().expect("new_document gives the id");
+    assert_ne!(first, second);
+    tool(&mut s, "type_text", json!({"text": "Second"}));
+
+    tool(&mut s, "execute", json!({"command": "text.insert", "params": {"text": " more"}, "doc": first}));
+    tool(&mut s, "batch", json!({"commands": [{"command": "text.insert", "params": {"text": " again"}}], "doc": first}));
+    assert_eq!(tool(&mut s, "get_text", json!({"doc": first}))["text"].as_str().unwrap().trim(), "First more again");
+    assert_eq!(tool(&mut s, "get_text", json!({}))["text"].as_str().unwrap().trim(), "Second");
+    let inspected = tool(&mut s, "inspect_document", json!({"doc": first}));
+    assert_eq!(inspected["blocks"][0]["text"], "First more again");
+    let r = call(&mut s, 12, "tools/call", json!({"name": "render_page", "arguments": {"doc": first, "scale": 0.2}}));
+    assert_eq!(r["result"]["content"][0]["type"], "image", "{r}");
+
+    let list = tool(&mut s, "list_documents", json!({}));
+    let docs = list["documents"].as_array().unwrap();
+    let ids: Vec<u64> = docs.iter().filter_map(|d| d["id"].as_u64()).collect();
+    assert!(ids.contains(&first) && ids.contains(&second), "{list}");
+    let active: Vec<u64> = docs.iter().filter(|d| d["active"] == true).filter_map(|d| d["id"].as_u64()).collect();
+    assert_eq!(active, vec![second]);
+
+    for bad in [json!(u64::MAX), json!(-1), json!("1"), json!(first.to_string()), json!(1.5), json!(1e300), json!({}), json!([first])] {
+        for (name, args) in [
+            ("execute", json!({"command": "text.insert", "params": {"text": "x"}, "doc": bad})),
+            ("get_text", json!({"doc": bad})),
+            ("inspect_document", json!({"doc": bad})),
+            ("render_page", json!({"doc": bad})),
+        ] {
+            let r = call(&mut s, 13, "tools/call", json!({"name": name, "arguments": args}));
+            assert_eq!(r["result"]["isError"], true, "{name} with doc {bad}: {r}");
+        }
+    }
+    assert_eq!(tool(&mut s, "get_text", json!({}))["text"].as_str().unwrap().trim(), "Second");
+    assert_eq!(tool(&mut s, "get_text", json!({"doc": first}))["text"].as_str().unwrap().trim(), "First more again");
 }

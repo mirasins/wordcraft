@@ -67,6 +67,7 @@ Typing, Enter, Backspace, Tab, lists, AutoCorrect and AutoFormat follow Word's o
 - Utiliza modelos de ambos proveedores según la tarea, sin exigir verificación cruzada entre proveedores. El usuario decidirá cuándo verificar el trabajo o solicitar un agente verificador.
 - Usa modelos ligeros y de menor coste. Antes de elegir, consulta los modelos disponibles con `opencode.models`; no fijes identificadores ni versiones en el código o la documentación.
 - Elige siempre el modelo más pequeño que sea adecuado. No escales a un modelo premium ni a proveedores distintos de `github-copilot` y `opencode-go` sin autorización explícita del usuario.
+- Prioriza los modelos más económicos de OpenCode Go y Copilot para los subagentes. Usa modelos elevados solo cuando la complejidad, el riesgo o un fallo comprobado del modelo económico lo requieran; documenta el motivo y solicita la autorización indicada arriba antes de escalar.
 - El agente principal coordina, toma las decisiones complejas y hace la revisión final del trabajo delegado.
 - Si alguno de los dos proveedores no está disponible, informa al usuario y usa el otro cuando sea adecuado.
 
