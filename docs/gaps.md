@@ -1,5 +1,7 @@
 # Where WordCraft falls short of Word
 
+> **Omni/flicker follow-up:** 2026-10-26 · Fork Omni dark palette restored in code with newer assistant tokens preserved; 16 theme/contrast tests pass and the screenshot was reviewed. Isolated tracing shows stable native theme/title properties, and the user identified the desktop system theme as the visible flicker's source. No additional rendering workaround or readiness estimate change.
+
 > **Title-bar update:** 2026-10-26 · Linux System theme keeps desktop portal preferences stable instead of resetting decorations on native theme feedback. The synthetic failure is reproduced; live confirmation of the reported title-bar flicker remains pending. Readiness estimates unchanged.
 
 > **Save/export update:** 2026-10-26 · M10: new saves and exports start in the system Documents folder; Save As offers Documents explicitly. Existing documents keep their folder. PDF copies use the dedicated exporter, including names without an extension. All 27 dialog regressions and a synthetic PDF export pass; no readiness estimate changed. Full CI remains blocked by the previously recorded Thai fallback font failure.
@@ -156,6 +158,7 @@ Small follow-ups from the 2026-10-25 field, table and AutoFormat batch (#4232):
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | trivial | M14: integrate the separate Omni palette; preserve assistant additions. Native tracing recorded; the user attributes visible flicker to the desktop system theme. |
 | 2026-10-26 | trivial | M14: stable Linux native decoration theme with portal authority; regression against resets; native flicker acceptance pending. |
 | 2026-10-26 | trivial | M10: system Documents default and explicit Save As destination; dedicated PDF export preserves the original document. 27 dialog regressions and a synthetic PDF export pass; full CI encounters the pre-existing Thai font failure. |
 | 2026-10-26 | trivial | Mirai/upstream 02120c84 synchronization: assistant MCP document routing and per-window state covered by merge regression tests; readiness estimates unchanged |

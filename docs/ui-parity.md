@@ -1,5 +1,7 @@
 # UI parity with Microsoft Word
 
+> **Omni/flicker follow-up:** 2026-10-26 · The Omni dark palette from the fork's `omni-theme` branch is ported without dropping newer assistant tokens; all 16 theme/contrast tests pass and the screenshot was reviewed. Blank-window tracing found no recurring native title/theme changes. The user identified the system desktop theme as the visible flicker's source, not a confirmed WordCraft rendering defect.
+
 > **Title-bar update:** 2026-10-26 · Linux System theme keeps the portal's answer stable despite native window theme reports. A regression reproduces redundant decoration resets before the fix and covers real portal switches; native visual confirmation pending.
 
 > **Save/export update:** 2026-10-26 · New desktop files start in the system Documents folder; File › Save As offers Documents and its actual path beside Browse. Existing files keep their folder. PDF export uses the dedicated exporter even without a filename extension; 27 dialog regressions and a synthetic PDF export pass. Full CI encounters the pre-existing Thai fallback font failure.
@@ -89,6 +91,7 @@ Footnote and endnote editing keeps body and note text at normal opacity, on ligh
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | trivial | M14: Omni dark palette integrated with assistant tokens preserved; 16 theme/contrast tests and headless screenshot reviewed. Native trace stable during simulated movement; user attributes visible flicker to the desktop theme. |
 | 2026-10-26 | trivial | M14: desktop portal theme wins over native window feedback on Linux; manual and non-Linux preferences unchanged. Synthetic regression; native flicker acceptance pending. |
 | 2026-10-26 | trivial | M10: Documents default/destination for Save As and export; PDF export stays PDF and leaves editable work unsaved. 27 dialog regressions and a synthetic PDF export pass; full CI encounters the pre-existing Thai font failure. |
 | 2026-10-26 | trivial | Mirai preserved with upstream 02120c84 multi-window UI; each window owns and restores its assistant panel state |

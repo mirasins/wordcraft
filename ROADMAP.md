@@ -1,5 +1,7 @@
 # WordCraft roadmap
 
+> **Omni/flicker follow-up:** 2026-10-26 · Ported the fork's Omni dark palette from `1c94f781`, preserving later assistant tokens; all 16 theme tests pass and a headless screenshot was reviewed. Isolated pointer tracing shows no repeated title/theme changes. The user identified the desktop system theme as the source of the visible flicker; no further WordCraft workaround applied.
+
 > **Title-bar update:** 2026-10-26 · Linux System theme keeps the desktop portal's answer authoritative instead of resetting native decorations when a window theme is reported. Synthetic regression reproduced before the fix; native visual confirmation pending.
 
 > **Save/export update:** 2026-10-26 · Documents is the default folder for new desktop saves and exports, with an explicit Save As destination. PDF export uses the dedicated exporter even when the chosen name has no extension. Dialog regressions and a synthetic PDF export pass; full CI still encounters the previously recorded Thai font failure.
@@ -144,6 +146,8 @@ Ranked, to beta (detail and remaining milestones in [docs/roadmap.md](docs/roadm
    (20–30 h).
 
 ## Progress log
+
+- 2026-10-26: M14 Omni integration: ported only the dark palette from the fork's `1c94f781` without replacing newer assistant tokens or bringing in unrelated font changes. All 16 theme/contrast tests pass and the headless dark screenshot was reviewed. A blank diagnostic window recorded 40 simulated pointer moves without native title/theme commands, and a 90-second property trace kept its dark theme and frame extents stable. The user subsequently identified the desktop system theme as the visible flicker's source. The earlier synthetic theme-feedback regression was real but did not establish that visible symptom's cause.
 
 - 2026-10-26: M14 Linux native title-bar appearance: System theme no longer drops the portal's Light/Dark answer when the window reports its own theme. The regression reproduces unwanted `SetTheme(SystemDefault)` before the fix; it covers stable light/dark frames and a real portal switch with a stale native report. Manual preferences and non-Linux fallback remain unchanged. Native flicker confirmation remains a user acceptance check.
 
@@ -662,6 +666,7 @@ Footer page-table height and body wrapping are corrected. Other pagination gaps 
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | trivial | M14: integrate Omni dark palette from the separate fork branch, retain assistant tokens, and record isolated native tracing plus user attribution of flicker to the desktop theme. |
 | 2026-10-26 | trivial | M14: stable portal-driven native title-bar theme; regression against redundant decoration resets, native visual confirmation pending. |
 | 2026-10-26 | minor | M10: Documents default/destination and dedicated PDF-copy export; optional compact packaging profile and LaTeX colour-helper deduplication. |
 | 2026-10-24 | trivial | Progress log: writing assistant UI rework (gap 25) landed, CI passed (8 gates), headless screenshots reviewed; each request stays independent |
