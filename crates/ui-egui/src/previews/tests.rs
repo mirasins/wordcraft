@@ -189,25 +189,31 @@ fn equation_pictures() -> Vec<(String, wordcraft_doc::math::Arg, bool, f32, egui
 }
 
 /// #1002: drawn the way the Equation tab draws them (the picture tinted with the theme's text
-/// colour on an input-coloured tile), every gallery tile, button and symbol is the theme's
-/// greys only: its background is the tile colour and its ink no darker or lighter than the
-/// text, in light and dark mode, with no red or teal anywhere.
+/// colour on an input-coloured tile), every gallery tile, button and symbol uses the theme's
+/// colours only: its background is the tile colour and its ink a blend towards the text
+/// colour, never past it, in light and dark mode, with no red or teal anywhere. (The tile
+/// colour need not be a pure grey: the dark theme's is tinted.)
 #[test]
 fn equation_pictures_follow_the_theme() {
     let mix = |fg: u8, bg: u8, a: u8| ((u32::from(fg) * u32::from(a) + u32::from(bg) * (255 - u32::from(a))) / 255) as u8;
     for (key, nodes, display, pt, size) in equation_pictures() {
         let img = math_image(&nodes, display, pt, size.x, size.y, 1.0).unwrap_or_else(|| panic!("{key} renders"));
+        // A white mask brings no colour of its own: the theme supplies all of it.
         assert!(img.pixels.iter().all(|p| *p == egui::Color32::from_white_alpha(p.a())), "{key}: an ink mask");
         // Ink may reach the corner (a matrix bracket with Windows fonts): look for paper anywhere.
         assert!(img.pixels.iter().any(|p| p.a() == 0), "{key}: transparent paper");
         for t in [Tokens::light(), Tokens::dark()] {
             let (bg, fg) = (t.input, t.text);
-            let (lo, hi) = (bg.r().min(fg.r()), bg.r().max(fg.r()));
+            let (bg, fg) = ([bg.r(), bg.g(), bg.b()], [fg.r(), fg.g(), fg.b()]);
             for p in &img.pixels {
                 let a = p.a();
-                let c = [mix(fg.r(), bg.r(), a), mix(fg.g(), bg.g(), a), mix(fg.b(), bg.b(), a)];
-                assert!(c[0] == c[1] && c[1] == c[2], "{key}: a grey, not {c:?}");
-                assert!((lo..=hi).contains(&c[0]), "{key}: between the tile and the text colour, not {c:?}");
+                let c = [mix(fg[0], bg[0], a), mix(fg[1], bg[1], a), mix(fg[2], bg[2], a)];
+                if a == 0 {
+                    assert_eq!(c, bg, "{key}: paper is the tile colour");
+                }
+                for ((ci, bi), fi) in c.iter().zip(bg).zip(fg) {
+                    assert!((bi.min(fi)..=bi.max(fi)).contains(ci), "{key}: between the tile and the text colour, not {c:?}");
+                }
             }
         }
     }
