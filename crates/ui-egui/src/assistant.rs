@@ -831,7 +831,7 @@ fn writing_options(ui: &mut egui::Ui, state: &mut State, action: &mut Action) {
         egui::ScrollArea::vertical().id_salt("assistant-options").max_height(240.0).show(ui, |ui| {
             ui.horizontal_wrapped(|ui| {
                 ui.label(tl!("Scope"));
-                egui::ComboBox::from_id_salt("assistant-scope").selected_text(scope_label(&state.scope)).show_ui(ui, |ui| {
+                craft_ui::ComboBox::from_id_salt("assistant-scope").selected_text(scope_label(&state.scope)).show_ui(ui, |ui| {
                     for scope in ["auto", "selection", "paragraph", "section", "document"] {
                         if ui.selectable_value(&mut state.scope, scope.into(), scope_label(scope)).changed() {
                             state.warned = false;
@@ -842,7 +842,7 @@ fn writing_options(ui: &mut egui::Ui, state: &mut State, action: &mut Action) {
             ui.small(tl!("Automatic: selected text, or the whole document when nothing is selected."));
             ui.horizontal_wrapped(|ui| {
                 let model_label = ui.label(tl!("Model"));
-                egui::ComboBox::from_id_salt("assistant-model")
+                craft_ui::ComboBox::from_id_salt("assistant-model")
                     .selected_text(if state.model.is_empty() { tl!("Claude Code default") } else { state.model.as_str() })
                     .show_ui(ui, |ui| {
                         ui.selectable_value(&mut state.model, String::new(), tl!("Claude Code default"));
