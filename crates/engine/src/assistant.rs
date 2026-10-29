@@ -9,9 +9,10 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 use wordcraft_doc::edit::Fragment;
 use wordcraft_doc::para::OBJ;
+use wordcraft_doc::props::PropChange;
 use wordcraft_doc::props::{CharProps, ParaProps};
 use wordcraft_doc::styles::{Style, StyleKind};
-use wordcraft_doc::{Block, Paragraph, Path, Pos, StoryRef};
+use wordcraft_doc::{Block, Paragraph, Path, Pos, Revision, RevisionKind, StoryRef};
 use wordcraft_formats::model::{Kind, para_kind};
 
 use crate::{CmdError, Selection, Session};
@@ -20,6 +21,8 @@ use crate::{CmdError, Selection, Session};
 pub const MAX_CONTEXT_BYTES: usize = 65_536;
 /// Most targets (paragraph slices) one context or one apply may hold.
 pub const MAX_TARGETS: usize = 256;
+/// The author of the assistant's suggestions, as tracked changes show it.
+pub const SUGGESTION_AUTHOR: &str = "Mirai";
 
 /// One paragraph slice the assistant may rewrite.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -67,6 +70,10 @@ pub struct Change {
 pub struct ApplyRequest {
     pub context: Context,
     pub changes: Vec<Change>,
+    /// Write the changes as suggestions: tracked changes by [`SUGGESTION_AUTHOR`], with
+    /// revisions of their own per change, whatever the Track Changes setting.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub suggest: bool,
 }
 
 /// Parameters of `assistant.context`.
@@ -85,6 +92,9 @@ pub struct ContextParams {
 pub struct Applied {
     pub count: usize,
     pub context: Context,
+    /// For suggestions: each change's index and the revisions only it uses, to accept or reject
+    /// it alone (`assistant.resolve`).
+    pub revisions: Vec<(usize, Vec<u32>)>,
 }
 
 fn refuse(msg: impl Into<String>) -> CmdError {
@@ -580,38 +590,97 @@ fn apply_markdown(s: &mut Session, e: &Edit) -> Result<Option<Shift>, CmdError> 
         };
         s.pending_move = None;
         s.sel = Selection { anchor: e.from.clone(), focus: e.to.clone() };
+        let at = crate::cmd::delete_selection(s)?;
+        // A tracked deletion stays in the paragraph: the new text goes after it, so the original
+        // keeps its paragraph (and its formatting) when the change is rejected.
+        let at = if s.doc.settings.track_changes {
+            let len = para_len(s, story, &path)?;
+            Pos { off: e.to.off.min(len), ..e.to.clone() }
+        } else {
+            at
+        };
+        s.sel = Selection::caret(at);
         crate::cmd::paste::insert(s, frag)?;
         // Pasting keeps the paragraph formatting where the first block lands; a whole target
         // takes the Markdown's (a heading, a list item, or plain text again).
-        if whole
-            && let Some(props) = first
-            && let Ok(p) = s.doc.para_mut(story, &path)
-        {
-            p.props = props;
+        if whole && let Some(props) = first {
+            // A tracked style change (a heading, a list) is rejected with the text. It is measured
+            // against the target as it was: pasting may already have given it the new style.
+            let old = &dest.props;
+            let change = if s.doc.settings.track_changes && old.fmt_change.is_none() && old.formatting() != props.formatting() {
+                Some(PropChange::boxed(crate::cmd::new_revision(s, RevisionKind::Format), old.formatting()))
+            } else {
+                None
+            };
+            if let Ok(p) = s.doc.para_mut(story, &path) {
+                p.props = props;
+                if let Some(change) = change {
+                    p.props.fmt_change = change;
+                }
+            }
         }
     }
     let delta = i64::try_from(count(s)).unwrap_or(i64::MAX).saturating_sub(i64::try_from(before).unwrap_or(i64::MAX));
     Ok((delta != 0).then(|| Shift { story, parent: path.parent().to_vec(), at: path.last(), delta }))
 }
 
+/// New insertion, deletion and formatting revisions by the session's author, so the next change
+/// uses its own (`new_revision` reuses the latest matching one).
+fn fresh_revisions(s: &mut Session) {
+    let date = crate::cmd::now_iso();
+    for kind in [RevisionKind::Insert, RevisionKind::Delete, RevisionKind::Format] {
+        s.doc.revisions.push(Revision::new(kind, s.author.clone(), date.clone()));
+    }
+}
+
 /// Apply `req` as one undoable step (the caller's `Session::run` checkpoint). Nothing changes
-/// unless every target validates and every change plans.
+/// unless every target validates and every change plans. Suggestions are tracked changes by
+/// [`SUGGESTION_AUTHOR`]; the Track Changes setting and the author are restored afterwards.
 pub fn apply(s: &mut Session, req: &ApplyRequest) -> Result<Applied, CmdError> {
+    if !req.suggest {
+        return apply_edits(s, req);
+    }
+    let track = std::mem::replace(&mut s.doc.settings.track_changes, true);
+    let author = std::mem::replace(&mut s.author, SUGGESTION_AUTHOR.to_string());
+    let out = apply_edits(s, req);
+    s.doc.settings.track_changes = track;
+    s.author = author;
+    out
+}
+
+fn apply_edits(s: &mut Session, req: &ApplyRequest) -> Result<Applied, CmdError> {
     check_context(s, &req.context)?;
     let edits = plan(&req.context, &req.changes)?;
     let track = s.doc.settings.track_changes;
     let mut shifts = Vec::new();
+    let mut revisions = Vec::new();
     // Last paragraph first, so earlier offsets and paths stay valid. `paste_text` takes its
     // formatting from the first replaced character, so the selection is the replaced text.
     for e in edits.iter().rev() {
         crate::cmd::controls::check_edit(s, &e.from, &e.to)?;
+        let first_rev = s.doc.revisions.len();
+        if req.suggest {
+            fresh_revisions(s);
+        }
+        let own = |s: &Session| (first_rev..s.doc.revisions.len()).filter_map(|i| u32::try_from(i).ok()).collect::<Vec<u32>>();
         if e.markdown {
             shifts.extend(apply_markdown(s, e)?);
+            if req.suggest {
+                revisions.push((e.idx, own(s)));
+            }
             continue;
         }
         let before = para_len(s, e.from.story, &e.from.path)?;
         s.sel = Selection { anchor: e.from.clone(), focus: e.to.clone() };
-        crate::cmd::paste_text(s, &e.middle)?;
+        if s.doc.settings.track_changes && e.from.off < e.to.off {
+            // As a suggestion reads: the struck-through original first, then the new text.
+            crate::cmd::delete_selection(s)?;
+            let len = para_len(s, e.from.story, &e.from.path)?;
+            s.sel = Selection::caret(Pos { off: e.to.off.min(len), ..e.to.clone() });
+        }
+        if !e.middle.is_empty() || s.sel.anchor != s.sel.focus {
+            crate::cmd::paste_text(s, &e.middle)?;
+        }
         if !track {
             let after = para_len(s, e.from.story, &e.from.path)?;
             let landed = s.doc.para_at(&e.from).and_then(|p| p.text.get(e.from.off..e.from.off + e.middle.len())).is_some_and(|t| t == e.middle);
@@ -620,7 +689,11 @@ pub fn apply(s: &mut Session, req: &ApplyRequest) -> Result<Applied, CmdError> {
                 return Err(fail("the replacement didn't land as planned; nothing was changed"));
             }
         }
+        if req.suggest {
+            revisions.push((e.idx, own(s)));
+        }
     }
+    revisions.reverse();
     let count = edits.len();
     let mut updated = req.context.clone();
     for e in &edits {
@@ -648,5 +721,5 @@ pub fn apply(s: &mut Session, req: &ApplyRequest) -> Result<Applied, CmdError> {
         }
     }
     updated.revision = s.rev().saturating_add(1);
-    Ok(Applied { count, context: updated })
+    Ok(Applied { count, context: updated, revisions })
 }

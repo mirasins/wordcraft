@@ -205,6 +205,45 @@ fn resolve_all(s: &mut Session, accept: bool) -> CmdResult {
     sel_result(s)
 }
 
+/// Accept or reject only the changes made under `revs` (the writing assistant's suggestions), in
+/// every story, leaving every other change as it is. Returns how many paragraphs held one.
+pub(crate) fn resolve_revisions(s: &mut Session, revs: &std::collections::BTreeSet<u32>, accept: bool) -> Result<usize, CmdError> {
+    let ours = |c: &wordcraft_doc::props::CharProps| c.ins.is_some_and(|r| revs.contains(&r)) || c.del.is_some_and(|r| revs.contains(&r));
+    let stories: Vec<StoryRef> = std::iter::once(StoryRef::Body).chain(s.doc.parts.keys().map(|k| StoryRef::Part(*k))).collect();
+    let mut found = 0;
+    for st in stories {
+        // Last paragraph first: removing a mark joins the next paragraph, never an earlier one.
+        for path in s.doc.para_paths(st).into_iter().rev() {
+            let Some(p) = s.doc.para(st, &path) else { continue };
+            let runs: Vec<(usize, usize)> = p
+                .run_ranges()
+                .filter(|(_, c)| ours(c) || c.fmt_change.as_ref().is_some_and(|f| revs.contains(&f.rev)))
+                .map(|(r, _)| (r.start, r.end))
+                .collect();
+            let props = p.props.fmt_change.as_ref().is_some_and(|f| revs.contains(&f.rev));
+            let mark = ours(&p.mark);
+            if runs.is_empty() && !props && !mark {
+                continue;
+            }
+            found += 1;
+            let para = s.doc.para_mut(st, &path)?;
+            if props {
+                fmt_revisions::resolve_para(&mut para.props, accept);
+                para.touch();
+            }
+            for (a, b) in runs.into_iter().rev() {
+                resolve_runs(para, a, b, false, accept)?;
+            }
+            if mark {
+                let len = para.len();
+                resolve_para(s, st, &path, (len, len), (true, false), accept)?;
+            }
+        }
+    }
+    s.clamp_selection();
+    Ok(found)
+}
+
 /// Accept or Reject All; with `stopTracking`, Track Changes is turned off as well.
 pub(super) fn resolve_all_then(s: &mut Session, v: &Value, accept: bool) -> CmdResult {
     let out = resolve_all(s, accept)?;

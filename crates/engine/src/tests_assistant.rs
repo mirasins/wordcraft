@@ -605,3 +605,102 @@ fn markdown_refuses_control_characters_and_objects() {
     }
     assert_eq!(body(&s), "one");
 }
+
+fn revisions_of(r: &Value, index: usize) -> Value {
+    let list = r["revisions"].as_array().unwrap();
+    let entry = list.iter().find(|e| e["index"] == index).unwrap();
+    entry["revisions"].clone()
+}
+
+fn resolve(s: &mut Session, revisions: &Value, accept: bool) -> Value {
+    s.run("assistant.resolve", &json!({"revisions": revisions, "accept": accept})).unwrap()
+}
+
+#[test]
+fn suggestions_are_tracked_changes_by_mirai_and_restore_the_settings() {
+    let mut s = session("one two\nthree");
+    let author = s.author.clone();
+    let c = ctx(&mut s, "document", true).unwrap();
+    let r = s.run("assistant.apply", &json!({"context": c, "changes": [{"index": 0, "text": "one 2"}], "suggest": true})).unwrap();
+    assert!(!s.doc.settings.track_changes, "Track Changes stays off");
+    assert_eq!(s.author, author, "the author is restored");
+    let p = s.doc.para(StoryRef::Body, &Path::top(0)).unwrap();
+    assert!(p.runs.iter().any(|r| r.props.ins.is_some()) && p.runs.iter().any(|r| r.props.del.is_some()), "shown as an insertion and a deletion");
+    let order: Vec<(bool, &str)> = p.run_ranges().filter_map(|(r, c)| Some((c.del.is_some(), p.text.get(r)?))).collect();
+    assert_eq!(order, [(false, "one "), (true, "two"), (false, "2")], "the deletion reads before the insertion");
+    let rev = p.runs.iter().find_map(|r| r.props.ins).unwrap();
+    assert_eq!(s.doc.revisions[rev as usize].author, "Mirai");
+    resolve(&mut s, &revisions_of(&r, 0), false);
+    assert_eq!(body(&s), "one two\nthree");
+    assert!(s.doc.para(StoryRef::Body, &Path::top(0)).unwrap().runs.iter().all(|r| r.props.ins.is_none() && r.props.del.is_none()));
+}
+
+#[test]
+fn each_suggestion_is_accepted_or_rejected_on_its_own() {
+    let mut s = session("alpha\nbeta\ngamma");
+    let c = ctx(&mut s, "document", true).unwrap();
+    let r = s
+        .run("assistant.apply", &json!({"context": c, "changes": [{"index": 0, "text": "ALPHA"}, {"index": 2, "text": "GAMMA"}], "suggest": true}))
+        .unwrap();
+    let (first, last) = (revisions_of(&r, 0), revisions_of(&r, 2));
+    assert_ne!(first, last, "separate revisions");
+    assert_eq!(resolve(&mut s, &first, true)["resolved"], 1);
+    resolve(&mut s, &last, false);
+    assert_eq!(body(&s), "ALPHA\nbeta\ngamma");
+    assert_eq!(resolve(&mut s, &first, true)["resolved"], 0, "already resolved");
+}
+
+#[test]
+fn a_rejected_heading_suggestion_restores_text_and_style() {
+    let mut s = session("Intro\nTail");
+    let c = ctx(&mut s, "document", true).unwrap();
+    let r = s
+        .run("assistant.apply", &json!({"context": c, "changes": [{"index": 0, "text": "# Overview\n\n- point", "markdown": true}], "suggest": true}))
+        .unwrap();
+    assert_eq!(style_of(&s, 0).as_deref(), Some("Heading1"), "the suggestion shows as a heading");
+    resolve(&mut s, &revisions_of(&r, 0), false);
+    assert_eq!(body(&s), "Intro\nTail");
+    assert_eq!(style_of(&s, 0), None);
+    assert_eq!(s.doc.body.len(), 2);
+}
+
+#[test]
+fn an_accepted_markdown_suggestion_keeps_the_new_blocks() {
+    let mut s = session("Intro\nTail");
+    let c = ctx(&mut s, "document", true).unwrap();
+    let r = s
+        .run("assistant.apply", &json!({"context": c, "changes": [{"index": 0, "text": "# Overview\n\n- point", "markdown": true}], "suggest": true}))
+        .unwrap();
+    resolve(&mut s, &revisions_of(&r, 0), true);
+    assert_eq!(body(&s), "Overview\npoint\nTail");
+    assert_eq!(style_of(&s, 0).as_deref(), Some("Heading1"));
+    let clean = s.doc.para_paths(StoryRef::Body).iter().all(|path| {
+        let p = s.doc.para(StoryRef::Body, path).unwrap();
+        p.mark.ins.is_none() && p.props.fmt_change.is_none() && p.runs.iter().all(|r| r.props.ins.is_none() && r.props.del.is_none())
+    });
+    assert!(clean, "no tracked change is left");
+}
+
+#[test]
+fn resolving_a_suggestion_leaves_the_users_own_changes() {
+    let mut s = session("Mine\ntheirs");
+    s.doc.settings.track_changes = true;
+    s.sel = Selection::caret(Pos::body(0, 4));
+    s.run("text.insert", &json!({"text": "!"})).unwrap();
+    s.doc.settings.track_changes = false;
+    select(&mut s, Pos::body(1, 0), Pos::body(1, 6));
+    let c = ctx(&mut s, "selection", false).unwrap();
+    let r = s.run("assistant.apply", &json!({"context": c, "changes": [{"index": 0, "text": "THEIRS"}], "suggest": true})).unwrap();
+    resolve(&mut s, &revisions_of(&r, 0), false);
+    assert_eq!(body(&s), "Mine!\ntheirs");
+    assert!(s.doc.para(StoryRef::Body, &Path::top(0)).unwrap().runs.iter().any(|r| r.props.ins.is_some()), "the user's insertion is still tracked");
+}
+
+#[test]
+fn resolve_refuses_bad_params() {
+    let mut s = session("one");
+    assert!(s.run("assistant.resolve", &json!({"revisions": [1]})).is_err());
+    assert!(s.run("assistant.resolve", &json!({"revisions": [-1], "accept": true})).is_err());
+    assert!(s.run("assistant.resolve", &json!({"revisions": "x", "accept": true})).is_err());
+    assert_eq!(s.run("assistant.resolve", &json!({"revisions": [99], "accept": true})).unwrap()["resolved"], 0);
+}

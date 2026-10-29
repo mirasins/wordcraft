@@ -67,9 +67,29 @@ struct Pending {
     explain_only: bool,
 }
 
+/// Where one suggestion shown in the document stands.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Shown {
+    Pending,
+    Accepted,
+    Rejected,
+    /// Undone, or accepted or rejected from the Review tab: none of its changes are left.
+    Gone,
+}
+
+/// One suggestion written into the document as tracked changes by Mirai.
+struct Preview {
+    index: usize,
+    revisions: Vec<u32>,
+    state: Shown,
+}
+
 struct Proposal {
     id: u64,
     context: Value,
+    /// The suggestions as they are shown in the document (suggestion mode). Empty when they
+    /// couldn't be shown there; the panel then offers Apply instead.
+    previews: Vec<Preview>,
     /// Original display text is immutable even when the engine returns a refreshed snapshot.
     originals: Vec<String>,
     /// What Regenerate sends again: the user's instruction and whether it was an explain request.
@@ -146,6 +166,8 @@ pub fn commands() -> Vec<Value> {
         ("assistant.cancel", "Cancel writing request", "Cancels the running local Claude Code process; cannot retract already transmitted text"),
         ("assistant.accept", "Apply writing suggestion", "id: proposal id; index?: target index (omitted applies all pending suggestions)"),
         ("assistant.discard", "Discard writing suggestion", "id: proposal id"),
+        ("assistant.resolveSuggestion", "Accept or reject a suggestion", "id: proposal id; index?: target index (omitted: every pending suggestion); accept: bool. Resolves the suggestions shown in the document as tracked changes by Mirai"),
+        ("assistant.retry", "Regenerate writing suggestion", "id: proposal id. Rejects its pending suggestions in the document, then asks Claude again"),
     ].into_iter().map(|(id, label, params)| json!({"id":id,"label":label,"location":"Review › Mirai Assistant",
         "shortcut":if id == "ui.assistant" { Some("Mod+Alt+Shift+A") } else { None },"params":params,"enabled":true})).collect()
 }
@@ -203,6 +225,8 @@ pub fn command(app: &mut WordApp, id: &str, params: &Value) -> Option<Result<Val
             Ok(json!({"cancelling":app.assistant.pending.is_some()}))
         }
         "assistant.accept" => accept(app, params),
+        "assistant.resolveSuggestion" => resolve_suggestion(app, params),
+        "assistant.retry" => retry(app, params),
         "assistant.discard" => {
             let proposal = params.get("id").and_then(Value::as_u64).and_then(|id| app.assistant.history.iter_mut().find(|p| p.id == id));
             match proposal {
@@ -400,6 +424,7 @@ pub fn poll(app: &mut WordApp) {
                 app.assistant.history.push_front(Proposal {
                     id,
                     context,
+                    previews: Vec::new(),
                     originals,
                     instruction: pending.instruction,
                     explain_only: pending.explain_only,
@@ -409,6 +434,7 @@ pub fn poll(app: &mut WordApp) {
                     undo_revision: None,
                 });
                 trim_history(&mut app.assistant);
+                show_in_document(app, id);
             }
         }
         Answer::Auth(Err(error)) => {
@@ -450,6 +476,97 @@ fn trim_history(state: &mut State) {
             break;
         }
     }
+}
+
+/// Write a new proposal's suggestions into the document as tracked changes by Mirai, as a
+/// suggestion mode: inserted text underlined in colour, removed text struck through. When the
+/// document changed meanwhile, they stay in the panel with Apply instead.
+fn show_in_document(app: &mut WordApp, id: u64) {
+    let Some(proposal) = app.assistant.history.iter().find(|p| p.id == id) else { return };
+    if proposal.explain_only || proposal.response.suggestions.is_empty() {
+        return;
+    }
+    let changes: Vec<Value> = proposal.response.suggestions.iter().map(|s| json!({"index":s.index,"text":s.text,"markdown":s.markdown})).collect();
+    let params = json!({"context":proposal.context,"changes":changes,"suggest":true});
+    match app.session.run("assistant.apply", &params) {
+        Ok(result) => {
+            let previews: Vec<Preview> = result
+                .get("revisions")
+                .and_then(Value::as_array)
+                .map(|list| {
+                    list.iter()
+                        .filter_map(|e| {
+                            let index = e.get("index").and_then(Value::as_u64).and_then(|i| usize::try_from(i).ok())?;
+                            let revisions =
+                                e.get("revisions")?.as_array()?.iter().filter_map(|r| r.as_u64().and_then(|n| u32::try_from(n).ok())).collect();
+                            Some(Preview { index, revisions, state: Shown::Pending })
+                        })
+                        .collect()
+                })
+                .unwrap_or_default();
+            if let Some(p) = app.assistant.history.iter_mut().find(|p| p.id == id) {
+                p.applied = previews.iter().map(|v| v.index).collect();
+                p.previews = previews;
+            }
+            app.canvas.want_focus = false;
+        }
+        Err(error) => {
+            app.assistant.message = format!("{} {error}", tl!("The suggestions could not be shown in the document:"));
+        }
+    }
+}
+
+/// Accept or reject one shown suggestion (`index`) or every pending one of a proposal.
+fn resolve_suggestion(app: &mut WordApp, params: &Value) -> Result<Value, String> {
+    let id = params.get("id").and_then(Value::as_u64).ok_or("give a proposal id")?;
+    let accept = params.get("accept").and_then(Value::as_bool).ok_or("`accept` must be a boolean")?;
+    let index =
+        params.get("index").map(|v| v.as_u64().and_then(|n| usize::try_from(n).ok()).ok_or("index must be a nonnegative integer")).transpose()?;
+    let proposal = app.assistant.history.iter().find(|p| p.id == id && !p.dismissed).ok_or("unknown or discarded proposal")?;
+    let chosen: Vec<usize> = proposal
+        .previews
+        .iter()
+        .enumerate()
+        .filter(|(_, v)| v.state == Shown::Pending && index.is_none_or(|i| v.index == i))
+        .map(|(n, _)| n)
+        .collect();
+    if chosen.is_empty() {
+        return Err("no pending suggestion in the document".into());
+    }
+    let mut resolved = 0;
+    for n in chosen {
+        let revisions =
+            app.assistant.history.iter().find(|p| p.id == id).and_then(|p| p.previews.get(n)).map(|v| v.revisions.clone()).unwrap_or_default();
+        let result = app.session.run("assistant.resolve", &json!({"revisions":revisions,"accept":accept})).map_err(|e| e.to_string())?;
+        let found = result.get("resolved").and_then(Value::as_u64).unwrap_or(0);
+        if let Some(v) = app.assistant.history.iter_mut().find(|p| p.id == id).and_then(|p| p.previews.get_mut(n)) {
+            v.state = match (found, accept) {
+                (0, _) => Shown::Gone,
+                (_, true) => Shown::Accepted,
+                (_, false) => Shown::Rejected,
+            };
+        }
+        resolved += usize::from(found > 0);
+    }
+    app.canvas.want_focus = false;
+    Ok(json!({"resolved":resolved}))
+}
+
+/// Regenerate: the pending suggestions leave the document, then Claude is asked again with the
+/// same instruction. The request was already confirmed, so it needs no second warning.
+fn retry(app: &mut WordApp, params: &Value) -> Result<Value, String> {
+    let id = params.get("id").and_then(Value::as_u64).ok_or("give a proposal id")?;
+    let proposal = app.assistant.history.iter().find(|p| p.id == id).ok_or("unknown proposal")?;
+    let (instruction, explain) = (proposal.instruction.clone(), proposal.explain_only);
+    if proposal.previews.iter().any(|v| v.state == Shown::Pending) {
+        resolve_suggestion(app, &json!({"id":id,"accept":false}))?;
+    }
+    if let Some(p) = app.assistant.history.iter_mut().find(|p| p.id == id) {
+        p.dismissed = true;
+    }
+    let mut request = request_params(&app.assistant, &instruction, explain);
+    request["confirm_document"] = json!(true);
+    start_suggestion(app, &request)
 }
 
 fn accept(app: &mut WordApp, params: &Value) -> Result<Value, String> {
@@ -732,10 +849,10 @@ fn header(ui: &mut egui::Ui, state: &State, action: &mut Action) {
     ui.horizontal(|ui| {
         if let Some(texture) = logo_texture(ui.ctx()) {
             ui.add(egui::Image::from_texture(&texture).alt_text("Mirai").max_height(64.0))
-                .on_hover_text(tl!("Claude Code · consult the current document without applying changes automatically"));
+                .on_hover_text(tl!("Claude Code · suggestions stay tracked changes until you accept them"));
         } else {
             ui.label(egui::RichText::new(tl!("Mirai")).strong().italics().size(17.0))
-                .on_hover_text(tl!("Claude Code · consult the current document without applying changes automatically"));
+                .on_hover_text(tl!("Claude Code · suggestions stay tracked changes until you accept them"));
         }
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {
             if ui.add(egui::Button::new("×").frame(false).small()).on_hover_text(tl!("Close")).clicked() {
@@ -770,7 +887,7 @@ fn context_note(ui: &mut egui::Ui) {
     egui::Frame::new().fill(tokens.assistant_surface).corner_radius(7).inner_margin(egui::Margin::symmetric(8, 6)).show(ui, |ui| {
         ui.horizontal_wrapped(|ui| {
             ui.label(egui::RichText::new("↳").strong().color(tokens.assistant_info));
-            ui.label(egui::RichText::new(tl!("Reads a copy of the open document to answer. It does not modify your text.")).small());
+            ui.label(egui::RichText::new(tl!("Suggestions appear in the document as tracked changes until you accept or reject them.")).small());
         });
     });
 }
@@ -1092,6 +1209,11 @@ fn history(ui: &mut egui::Ui, state: &mut State, live: (u64, u64), action: &mut 
             if !proposal.response.explanation.is_empty() {
                 message(ui, tl!("Claude"), &proposal.response.explanation, false);
             }
+            if !proposal.previews.is_empty() {
+                suggestion_card(ui, proposal, busy, action);
+                ui.separator();
+                return;
+            }
             ui.collapsing(tl!("Review changes"), |ui| {
                 ui.strong(format!("{} #{}", tl!("Proposal"), proposal.id));
                 let same_doc = proposal.context.get("document_id").and_then(Value::as_u64) == Some(live.0);
@@ -1135,6 +1257,70 @@ fn history(ui: &mut egui::Ui, state: &mut State, live: (u64, u64), action: &mut 
             ui.separator();
         });
     }
+}
+
+/// A proposal shown in the document, like an AI suggestion in an online editor: how many changes
+/// are waiting, Accept all / Reject all / Regenerate, and each change with its own buttons.
+fn suggestion_card(ui: &mut egui::Ui, proposal: &Proposal, busy: bool, action: &mut Action) {
+    let tokens = crate::theme::Tokens::get(ui.ctx());
+    let pending = proposal.previews.iter().filter(|v| v.state == Shown::Pending).count();
+    egui::Frame::new()
+        .fill(tokens.assistant_surface)
+        .stroke(egui::Stroke::new(1.0, tokens.assistant_accent))
+        .corner_radius(10)
+        .inner_margin(egui::Margin::symmetric(10, 8))
+        .show(ui, |ui| {
+            ui.set_width((ui.available_width() - 2.0).max(0.0));
+            let summary = if pending == 0 {
+                tl!("All suggestions were resolved.").to_owned()
+            } else {
+                format!("{pending} · {}", tl!("suggested changes are shown in the document. Review them there or here."))
+            };
+            ui.label(egui::RichText::new(summary).small());
+            ui.horizontal_wrapped(|ui| {
+                let accept_all = egui::Button::new(egui::RichText::new(tl!("Accept all")).strong().color(tokens.assistant_on_button))
+                    .fill(tokens.assistant_button)
+                    .corner_radius(6);
+                if ui.add_enabled(pending > 0 && !busy, accept_all).clicked() {
+                    *action = Some(("assistant.resolveSuggestion", json!({"id":proposal.id,"accept":true})));
+                }
+                if ui.add_enabled(pending > 0 && !busy, egui::Button::new(tl!("Reject all"))).clicked() {
+                    *action = Some(("assistant.resolveSuggestion", json!({"id":proposal.id,"accept":false})));
+                }
+                if ui.add_enabled(!busy, egui::Button::new(tl!("Regenerate"))).clicked() {
+                    *action = Some(("assistant.retry", json!({"id":proposal.id})));
+                }
+            });
+            ui.collapsing(tl!("Review changes"), |ui| {
+                for preview in &proposal.previews {
+                    let Some(suggestion) = proposal.response.suggestions.iter().find(|s| s.index == preview.index) else { continue };
+                    let original = proposal.originals.get(suggestion.index).map(String::as_str).unwrap_or("");
+                    ui.push_id(preview.index, |ui| {
+                        draw_diff(ui, original, &suggestion.text, suggestion.markdown);
+                        ui.horizontal(|ui| match preview.state {
+                            Shown::Pending => {
+                                if ui.add_enabled(!busy, egui::Button::new(tl!("Accept"))).clicked() {
+                                    *action = Some(("assistant.resolveSuggestion", json!({"id":proposal.id,"index":preview.index,"accept":true})));
+                                }
+                                if ui.add_enabled(!busy, egui::Button::new(tl!("Reject"))).clicked() {
+                                    *action = Some(("assistant.resolveSuggestion", json!({"id":proposal.id,"index":preview.index,"accept":false})));
+                                }
+                            }
+                            Shown::Accepted => {
+                                ui.label(egui::RichText::new(tl!("Accepted")).small().color(tokens.assistant_muted));
+                            }
+                            Shown::Rejected => {
+                                ui.label(egui::RichText::new(tl!("Rejected")).small().color(tokens.assistant_muted));
+                            }
+                            Shown::Gone => {
+                                ui.label(egui::RichText::new(tl!("No longer in the document")).small().color(tokens.assistant_muted));
+                            }
+                        });
+                    });
+                    ui.add_space(4.0);
+                }
+            });
+        });
 }
 
 fn request_params(state: &State, instruction: &str, explain: bool) -> Value {
@@ -1189,50 +1375,146 @@ mod tests {
         app
     }
 
+    /// The body without its tracked deletions: what the document reads with the suggestions.
+    fn shown(app: &WordApp) -> String {
+        let doc = &app.session.doc;
+        doc.para_paths(wordcraft_doc::StoryRef::Body)
+            .iter()
+            .filter_map(|path| doc.para(wordcraft_doc::StoryRef::Body, path))
+            .map(|p| p.run_ranges().filter(|(_, c)| c.del.is_none()).filter_map(|(r, _)| p.text.get(r)).collect::<String>())
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+
+    fn tracked(app: &WordApp) -> bool {
+        let doc = &app.session.doc;
+        doc.para_paths(wordcraft_doc::StoryRef::Body)
+            .iter()
+            .filter_map(|path| doc.para(wordcraft_doc::StoryRef::Body, path))
+            .any(|p| p.mark.ins.is_some() || p.props.fmt_change.is_some() || p.runs.iter().any(|r| r.props.ins.is_some() || r.props.del.is_some()))
+    }
+
     #[test]
-    fn mocked_request_review_apply_and_native_undo() {
+    fn a_proposal_is_shown_in_the_document_as_suggestions_and_accepted_with_native_undo() {
         let mut app = reviewed_app();
         assert_eq!(app.assistant.history.len(), 1);
-        assert_eq!(app.session.doc.plain_text(wordcraft_doc::StoryRef::Body), "A very long sentence.\nKeep this paragraph.");
-        app.execute("assistant.accept", json!({"id":1})).unwrap();
+        assert!(tracked(&app), "shown as tracked changes");
+        assert_eq!(shown(&app), "A short sentence.\nKeep this paragraph.");
+        assert!(!app.session.doc.settings.track_changes, "Track Changes stays off");
+        assert!(app.execute("assistant.accept", json!({"id":1})).is_err(), "already in the document");
+        app.execute("assistant.resolveSuggestion", json!({"id":1,"accept":true})).unwrap();
         assert_eq!(app.session.doc.plain_text(wordcraft_doc::StoryRef::Body), "A short sentence.\nKeep this paragraph.");
+        assert!(!tracked(&app));
+        assert_eq!(app.assistant.history.front().unwrap().previews[0].state, Shown::Accepted);
         assert_eq!(app.assistant.history.front().unwrap().originals[0], "A very long sentence.");
+        app.execute("edit.undo", json!({})).unwrap();
+        assert!(tracked(&app), "undo brings the suggestion back");
         app.execute("edit.undo", json!({})).unwrap();
         assert_eq!(app.session.doc.plain_text(wordcraft_doc::StoryRef::Body), "A very long sentence.\nKeep this paragraph.");
     }
 
     #[test]
-    fn markdown_proposal_applies_formatted_blocks_and_sends_structure() {
-        let mut app = WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("Notes\nfirst, second")), Default::default());
-        let context = app.session.run("assistant.context", &json!({"scope":"document","confirm_document":true})).unwrap();
-        assert_eq!(context["targets"][0]["structure"], "paragraph");
+    fn rejecting_a_suggestion_restores_the_text_and_an_undone_one_is_gone() {
+        let mut app = reviewed_app();
+        app.execute("assistant.resolveSuggestion", json!({"id":1,"index":0,"accept":false})).unwrap();
+        assert_eq!(app.session.doc.plain_text(wordcraft_doc::StoryRef::Body), "A very long sentence.\nKeep this paragraph.");
+        assert!(!tracked(&app));
+        assert!(app.execute("assistant.resolveSuggestion", json!({"id":1,"accept":true})).is_err(), "nothing pending");
+        let mut app = reviewed_app();
+        app.execute("edit.undo", json!({})).unwrap();
+        app.execute("assistant.resolveSuggestion", json!({"id":1,"accept":true})).unwrap();
+        assert_eq!(app.assistant.history.front().unwrap().previews[0].state, Shown::Gone);
+    }
+
+    #[test]
+    fn a_proposal_for_a_changed_document_stays_in_the_panel_with_apply() {
+        let mut app = WordApp::new(
+            wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("A very long sentence.\nKeep this paragraph.")),
+            Default::default(),
+        );
+        app.session.run("select.text", &json!({"text":"A very long sentence."})).unwrap();
+        let context = app.session.run("assistant.context", &json!({"scope":"auto"})).unwrap();
         let (sender, receiver) = std::sync::mpsc::channel();
         app.assistant.pending = Some(Pending {
             cancel: Arc::new(AtomicBool::new(false)),
             receiver,
             context: Some(context),
-            instruction: "Structure".into(),
+            instruction: "Shorter".into(),
             explain_only: false,
         });
+        // Typed while Claude was working.
+        app.session.run("text.insert", &json!({"text":"X"})).unwrap();
         sender
             .send(Answer::Suggestion(Ok((
                 AuthState::Account,
                 Response {
-                    suggestions: vec![
-                        wordcraft_assistant::Suggestion { index: 0, text: "# Notes".into(), markdown: true },
-                        wordcraft_assistant::Suggestion { index: 1, text: "- first\n- **second**".into(), markdown: true },
-                    ],
-                    explanation: "Heading and list.".into(),
+                    suggestions: vec![wordcraft_assistant::Suggestion { index: 0, text: "Short.".into(), markdown: false }],
+                    explanation: String::new(),
                 },
             ))))
             .unwrap();
         poll(&mut app);
-        app.execute("assistant.accept", json!({"id":1})).unwrap();
-        assert_eq!(app.session.doc.plain_text(wordcraft_doc::StoryRef::Body), "Notes\nfirst\nsecond");
-        let heading = app.session.doc.para(wordcraft_doc::StoryRef::Body, &wordcraft_doc::Path::top(0)).and_then(|p| p.props.style.clone());
-        assert_eq!(heading.as_deref(), Some("Heading1"));
-        app.execute("edit.undo", json!({})).unwrap();
-        assert_eq!(app.session.doc.plain_text(wordcraft_doc::StoryRef::Body), "Notes\nfirst, second");
+        assert!(app.assistant.history.front().unwrap().previews.is_empty());
+        assert!(!tracked(&app));
+        assert!(!app.assistant.message.is_empty(), "says why");
+    }
+
+    #[test]
+    fn markdown_proposal_applies_formatted_blocks_and_sends_structure() {
+        for accept in [true, false] {
+            let mut app =
+                WordApp::new(wordcraft_engine::Session::new(wordcraft_doc::Document::from_text("Notes\nfirst, second")), Default::default());
+            let context = app.session.run("assistant.context", &json!({"scope":"document","confirm_document":true})).unwrap();
+            assert_eq!(context["targets"][0]["structure"], "paragraph");
+            let (sender, receiver) = std::sync::mpsc::channel();
+            app.assistant.pending = Some(Pending {
+                cancel: Arc::new(AtomicBool::new(false)),
+                receiver,
+                context: Some(context),
+                instruction: "Structure".into(),
+                explain_only: false,
+            });
+            sender
+                .send(Answer::Suggestion(Ok((
+                    AuthState::Account,
+                    Response {
+                        suggestions: vec![
+                            wordcraft_assistant::Suggestion { index: 0, text: "# Notes".into(), markdown: true },
+                            wordcraft_assistant::Suggestion { index: 1, text: "- first\n- **second**".into(), markdown: true },
+                        ],
+                        explanation: "Heading and list.".into(),
+                    },
+                ))))
+                .unwrap();
+            poll(&mut app);
+            let style =
+                |app: &WordApp| app.session.doc.para(wordcraft_doc::StoryRef::Body, &wordcraft_doc::Path::top(0)).and_then(|p| p.props.style.clone());
+            assert_eq!(
+                shown(&app),
+                "Notes
+first
+second"
+            );
+            assert_eq!(style(&app).as_deref(), Some("Heading1"), "the suggestion shows its formatting");
+            app.execute("assistant.resolveSuggestion", json!({"id":1,"accept":accept})).unwrap();
+            assert!(!tracked(&app));
+            if accept {
+                assert_eq!(
+                    app.session.doc.plain_text(wordcraft_doc::StoryRef::Body),
+                    "Notes
+first
+second"
+                );
+                assert_eq!(style(&app).as_deref(), Some("Heading1"));
+            } else {
+                assert_eq!(
+                    app.session.doc.plain_text(wordcraft_doc::StoryRef::Body),
+                    "Notes
+first, second"
+                );
+                assert_eq!(style(&app), None, "rejecting restores the paragraph style");
+            }
+        }
     }
 
     #[test]
@@ -1267,16 +1549,14 @@ mod tests {
             .unwrap();
         poll(&mut app);
         let body = |app: &WordApp| app.session.doc.plain_text(wordcraft_doc::StoryRef::Body);
-        app.execute("assistant.accept", json!({"id":1,"index":1})).unwrap();
+        assert_eq!(shown(&app), "First line.\nSecond line.\nUntouched.");
+        app.execute("assistant.resolveSuggestion", json!({"id":1,"index":1,"accept":true})).unwrap();
+        app.execute("assistant.resolveSuggestion", json!({"id":1,"index":0,"accept":false})).unwrap();
         assert_eq!(body(&app), "First draft line.\nSecond line.\nUntouched.");
-        // The refreshed context is at the new revision, so the other suggestion still applies.
-        app.execute("assistant.accept", json!({"id":1,"index":0})).unwrap();
-        assert_eq!(body(&app), "First line.\nSecond line.\nUntouched.");
-        assert!(app.execute("assistant.accept", json!({"id":1})).is_err(), "nothing left to apply");
+        assert!(!tracked(&app));
+        assert!(app.execute("assistant.resolveSuggestion", json!({"id":1,"accept":true})).is_err(), "nothing left");
         app.execute("edit.undo", json!({})).unwrap();
-        assert_eq!(body(&app), "First draft line.\nSecond line.\nUntouched.");
-        app.execute("edit.undo", json!({})).unwrap();
-        assert_eq!(body(&app), "First draft line.\nSecond draft line.\nUntouched.");
+        assert_eq!(shown(&app), "First line.\nSecond line.\nUntouched.", "each resolution is its own undo step");
     }
 
     #[test]
@@ -1308,10 +1588,11 @@ mod tests {
             ))))
             .unwrap();
         poll(&mut app);
-        app.execute("assistant.accept", json!({"id":1,"index":0})).unwrap();
-        // The proposal follows the document's revision, so the other suggestion still applies.
-        app.execute("assistant.accept", json!({"id":1,"index":1})).unwrap();
-        assert!(app.execute("assistant.accept", json!({"id":1})).is_err(), "nothing left to apply");
+        assert!(app.session.doc.settings.track_changes, "Track Changes stays on");
+        app.execute("assistant.resolveSuggestion", json!({"id":1,"index":0,"accept":true})).unwrap();
+        app.execute("assistant.resolveSuggestion", json!({"id":1,"index":1,"accept":true})).unwrap();
+        assert_eq!(app.session.doc.plain_text(wordcraft_doc::StoryRef::Body), "First line.\nSecond line.");
+        assert!(app.execute("assistant.resolveSuggestion", json!({"id":1,"accept":true})).is_err(), "nothing left");
     }
 
     #[test]
@@ -1361,9 +1642,12 @@ mod tests {
         harness.run_steps(2);
         assert!(harness.query_by_label("Original").is_some());
         assert!(harness.query_by_label("Suggested").is_some());
-        harness.get_by_label("Apply").click();
+        assert!(harness.query_by_role_and_label(egui::accesskit::Role::Button, "Accept").is_some());
+        assert!(harness.query_by_role_and_label(egui::accesskit::Role::Button, "Reject").is_some());
+        harness.get_by_role_and_label(egui::accesskit::Role::Button, "Accept all").click();
         harness.run_steps(3);
         assert_eq!(harness.state().session.doc.plain_text(wordcraft_doc::StoryRef::Body), "A short sentence.\nKeep this paragraph.");
+        assert!(harness.query_by_label("All suggestions were resolved.").is_some());
     }
 
     #[test]
@@ -1457,8 +1741,8 @@ mod tests {
         h.run_steps(6);
         assert!(h.query_by_label("You").is_some());
         assert!(h.query_by_label("Mirai").is_some());
-        assert!(h.query_by_label("Claude Code · consult the current document without applying changes automatically").is_none());
-        assert!(h.query_by_label("Reads a copy of the open document to answer. It does not modify your text.").is_some());
+        assert!(h.query_by_label("Claude Code · suggestions stay tracked changes until you accept them").is_none());
+        assert!(h.query_by_label("Suggestions appear in the document as tracked changes until you accept or reject them.").is_some());
         assert!(h.query_by_role_and_label(egui::accesskit::Role::Button, "New conversation").is_some());
         assert!(h.query_by_label("Press Enter to send · Shift+Enter for a new line").is_some());
         assert!(h.query_by_role_and_label(egui::accesskit::Role::Button, "Send").is_some());
@@ -1472,7 +1756,7 @@ mod tests {
         assert_eq!(h.state().assistant.instruction, "A longer message.\n".repeat(80));
         assert!(h.state().assistant.pending.is_none(), "model selection never starts Claude Code");
         assert_eq!(request_params(&h.state().assistant, "Improve", false)["model"], "haiku");
-        assert_eq!(h.state().session.doc.plain_text(wordcraft_doc::StoryRef::Body), "A very long sentence.\nKeep this paragraph.");
+        assert_eq!(shown(h.state()), "A short sentence.\nKeep this paragraph.", "only the suggestion is in the document");
     }
 
     #[test]

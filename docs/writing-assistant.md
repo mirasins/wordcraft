@@ -112,10 +112,26 @@ rather than sent without them. Refusals and errors appear in the window.
 
 ## Reviewing and applying
 
-When a proposal arrives, it appears in the conversation above the composer. To ask again, type
-in the composer below; the options stay folded under **Options** unless you open them. Each suggestion appears with its original and suggested text,
-changed words marked: struck through in the original, underlined in the suggestion. The
-explanation is written in the interface language. Then:
+When a proposal arrives, its suggestions are written straight into the document as suggested
+changes by **Mirai**, as in an online editor's suggestion mode: removed text struck through and
+new text underlined in the revision colour, with the new formatting (a heading, a list) already
+visible. Track Changes is not turned on for your own typing. The panel shows a card with the
+number of suggested changes and:
+
+- **Accept all** keeps every pending suggestion; **Reject all** removes them and restores the
+  original text and formatting.
+- **Regenerate** rejects the pending suggestions and asks Claude again with the same instruction.
+- **Review changes** lists each suggestion with its original and suggested text (changed words
+  marked) and its own **Accept** and **Reject**, or its state: *Accepted*, *Rejected*, or *No
+  longer in the document* (undone, or resolved from the Review tab).
+
+The suggestions are ordinary tracked changes, so the Review tab's Accept/Reject and Next/Previous
+work on them too, and accepting or rejecting one of Mirai's suggestions leaves your own tracked
+changes alone. Showing the suggestions is one undo step, and each Accept or Reject is another.
+The explanation is written in the interface language.
+
+If the document changed while Claude was working, the proposal can't be shown in the document:
+the panel says why and keeps the proposal as a review with Apply:
 
 - **Apply** applies one suggestion. **Apply all** applies the rest of the proposal.
 - After an application, the window takes the document's new state, so the remaining suggestions
@@ -149,8 +165,8 @@ Claude sees what each paragraph is (paragraph, heading level, list item, quote, 
 so it can keep or change the structure. Questions about the document (for example *Summarize the
 main ideas*) are answered in the explanation, with no suggestions. Fields and objects are never
 edited. A formatted change is one undo step like any other application; with Track Changes the
-inserted and deleted text is tracked, but a paragraph style change (for example to a heading) is
-not.
+inserted and deleted text is tracked, and in suggestions the paragraph style change (for example
+to a heading) is tracked too, so rejecting restores the original style.
 
 ## Cancelling and timeouts
 
@@ -176,7 +192,7 @@ connection check after 30. Text already sent to Claude cannot be retracted by ca
 
 Labels say what each control does, and proposal state is written as text, not only colour:
 removed text is struck through and added text underlined. Automated tests check that the
-**Original**, **Suggested** and **Apply** labels reach the accessibility tree (AccessKit), the
+**Original**, **Suggested**, **Accept**, **Reject** and **Accept all** labels reach the accessibility tree (AccessKit), the
 starter chips fill the draft without sending, and the assistant shortcut opens the panel and Escape
 closes it. This has not yet been checked with a screen reader on any platform.
 
@@ -192,3 +208,4 @@ closes it. This has not yet been checked with a screen reader on any platform.
 | 2026-10-25 | trivial | Reduced header noise: one-line italic Mirai wordmark in a dedicated dark-cyan capsule with light-lavender text, compact unframed connection status and text-only New conversation. Light theme keeps the capsule dark for contrast |
 | 2026-10-25 | minor | Automatic scope uses selected text, or the whole body when there is no text selection. Whole-body consent remains explicit; the panel's automatic-scope hint and send gate reflect this default. |
 | 2026-10-26 | minor | Formatted and structural suggestions (Markdown: headings, lists, emphasis, tables, split, merge, add and remove paragraphs) with the paragraph structure sent to Claude; Automatic/Selection/Whole document switch above the composer; a whole-document warning skipped with a second Enter replaces the consent checkbox; whole-document and section scopes leave out paragraphs that can't be rewritten; Claude Code runs without console windows on Windows, with one sign-in check per request. Offline tests only |
+| 2026-10-26 | minor | Suggestion mode: proposals appear in the document as tracked changes by Mirai (deletion before insertion, formatting tracked), with Accept all, Reject all, Regenerate and per-suggestion Accept/Reject in the panel; Apply remains for proposals the document no longer matches. Offline tests only |

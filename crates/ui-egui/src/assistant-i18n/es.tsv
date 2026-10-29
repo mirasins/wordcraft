@@ -6,11 +6,9 @@
 	Mirai	Mirai
 	Mirai\nAssistant	Mirai\nAssistant
 	Check connection	Comprobar conexión
-	Claude Code · consult the current document without applying changes automatically	Claude Code · consulta el documento actual, sin aplicar cambios automáticamente
 	New conversation	Nueva conversación
 	Connected	Conectado
 	Disconnected	Sin conexión
-	Reads a copy of the open document to answer. It does not modify your text.	Lee una copia del documento abierto para responder. No modifica tu texto.
 	How can I help with your document?	¿En qué te ayudo con tu documento?
 	Choose an idea to start or write your own question.	Elige una idea para empezar o escribe tu propia pregunta.
 	Summarize main ideas	Resumir ideas principales
@@ -82,3 +80,13 @@ assistant	Original	Original
 	Start with your text	Empieza con tu texto
 	Choose an action or describe what you would like to change.	Elige una acción o describe lo que quieres cambiar.
 	Review changes	Revisar cambios
+	The suggestions could not be shown in the document:	No se pudieron mostrar las sugerencias en el documento:
+	All suggestions were resolved.	Se resolvieron todas las sugerencias.
+	suggested changes are shown in the document. Review them there or here.	cambios sugeridos se muestran en el documento. Revísalos ahí o aquí.
+	Accept all	Aceptar todo
+	Reject all	Rechazar todo
+	Accepted	Aceptado
+	Rejected	Rechazado
+	No longer in the document	Ya no está en el documento
+	Suggestions appear in the document as tracked changes until you accept or reject them.	Las sugerencias aparecen en el documento como cambios registrados hasta que las aceptes o rechaces.
+	Claude Code · suggestions stay tracked changes until you accept them	Claude Code · las sugerencias quedan como cambios registrados hasta que las aceptes

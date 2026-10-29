@@ -23,7 +23,7 @@
   `CLAUDE_CODE_USE_FOUNDRY`, `AWS_BEARER_TOKEN_BEDROCK`); the parent environment is untouched.
 - Document text is data. It reaches the CLI only on stdin, as JSON, and the system prompt says so.
 - Nothing is sent before the consent rules pass (in the panel: a warning, then a second send),
-  and nothing changes the document except `assistant.apply` through the engine.
+  and nothing changes the document except `assistant.apply` and `assistant.resolve` through the engine.
 - Never crash: no `unwrap`, `expect` or panics in these crates (see [AGENTS.md](../AGENTS.md)).
 
 ## Layers and files
@@ -159,6 +159,17 @@ the remaining targets can still be applied with the refreshed context.
 Reading a new context for a paragraph with tracked deletions is still refused to avoid sending
 hidden text. Accept or reject those revisions before regenerating over that paragraph.
 
+Suggestion mode: `assistant.apply {..., suggest: true}` turns Track Changes on and sets the author
+to `SUGGESTION_AUTHOR` ("Mirai") for the apply only, then restores both. Before each change
+`fresh_revisions` pushes new Insert/Delete/Format revisions, because `new_revision` reuses the
+latest matching one with the same author and date; the result's `revisions: [{index, revisions}]`
+lists each change's own ids. While tracking, a plain change deletes first and inserts after the
+tracked deletion, so it reads old-then-new; a whole Markdown target's paragraph-props change gets
+a tracked `fmt_change` against the destination's props, so rejecting restores the style.
+`assistant.resolve {revisions, accept}` resolves only runs, paragraph marks and paragraph
+formatting carrying those ids (`review::resolve_revisions`), as one undo step, and returns
+`{resolved}` (paragraphs touched; 0 when they are gone).
+
 Known limits of the process handling (from a review of `process.rs` and `client.rs`):
 
 - Timeout and cancel kill the `claude` process itself, not processes it may have started. With
@@ -234,9 +245,12 @@ Known limits of the process handling (from a review of `process.rs` and `client.
 | `assistant.status` | UI | `{busy, connection, message, proposals}` with proposal ids |
 | `assistant.cancel` | UI | Cancels the running worker |
 | `assistant.accept` | UI | `{id, index?}`: applies one or all pending suggestions of a proposal |
+| `assistant.resolveSuggestion` | UI | `{id, index?, accept}`: accepts or rejects one or every pending suggestion shown in the document |
+| `assistant.retry` | UI | `{id}`: rejects the pending suggestions, discards the proposal and asks again |
 | `assistant.discard` | UI | `{id}` |
 | `assistant.context` | engine | Read-only snapshot |
-| `assistant.apply` | engine | Validated, undoable apply; returns the updated context |
+| `assistant.apply` | engine | Validated, undoable apply; returns the updated context; `suggest: true` writes tracked changes by Mirai |
+| `assistant.resolve` | engine | `{revisions, accept}`: resolves only those revision ids |
 
 MCP: the headless server answers `assistant.suggest` synchronously through
 `assistant::generate_locally` and returns `{context, suggestions, explanation}` without changing
@@ -287,6 +301,7 @@ unchanged target does not cause the whole apply batch to be refused.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-26 | minor | Suggestion mode: `poll` shows each new proposal in the document (`show_in_document`, `assistant.apply` with `suggest`), `Preview` per suggestion, `assistant.resolve`/`resolveSuggestion`/`retry`, deletion-before-insertion for tracked plain changes, tracked paragraph formatting for Markdown. CI result in the commit |
 | 2026-10-26 | minor | Markdown suggestions (`Suggestion::markdown`, engine apply with block shifts and removal), `Request::structure`, lenient document/section scopes, warning instead of the consent checkbox, visible scope switch, `CREATE_NO_WINDOW` on Windows and one auth check per request. `cargo xtask ci` passed on Windows (8 gates, 4,610 tests, 8 ignored); no live-account check |
 | 2026-10-25 | minor | Reworked the UI into a docked, resizable 280 pt right panel. Mirai palette tokens, conditional error card, draft-filling welcome chips, fixed compact composer, Enter/Shift+Enter with IME protection, and UI-only New conversation; review/apply/undo and backend/auth contracts retained. Focused tests and native `cargo check` passed; headless dark screenshot reviewed |
 | 2026-10-23 | major | First version: draft implementation. Not yet compiled in the repository gates, not run against a live account |
