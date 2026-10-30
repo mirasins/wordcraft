@@ -360,7 +360,7 @@ fn table_tabs_stay_clickable_when_the_tab_strip_overflows() {
     use egui_kittest::kittest::Queryable;
     let mut app = WordApp::new(Session::new(wordcraft_doc::Document::from_text("Text")), crate::Services::default());
     app.run("insert.table", json!({"rows": 3, "cols": 3})).unwrap();
-    app.run("ui.language", json!({"value": "pl"})).unwrap();
+    app.run("ui.language", json!({"value": "ru"})).unwrap();
     let mut h = egui_kittest::Harness::builder().with_size(vec2(1280.0, 900.0)).build_ui_state(
         |ui, app: &mut WordApp| {
             let ctx = ui.ctx().clone();
@@ -388,7 +388,7 @@ fn tab_strip_never_overlaps_the_right_buttons() {
         return;
     }
     use egui_kittest::kittest::Queryable;
-    for lang in ["en", "pl", "de"] {
+    for lang in ["en", "ru", "fr", "de"] {
         for width in [300.0, 420.0, 520.0, 640.0, 765.0, 1280.0] {
             let mut app = WordApp::new(Session::new(wordcraft_doc::Document::from_text("Text")), crate::Services::default());
             app.run("insert.table", json!({"rows": 3, "cols": 3})).unwrap();

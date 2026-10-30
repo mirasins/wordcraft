@@ -26,7 +26,7 @@ mod traffic_lights;
 
 use wordcraft_engine::Session;
 use wordcraft_ui_egui::{
-    Services, UiState, WordApp, UPDATE_APP,
+    Services, UPDATE_APP, UiState, WordApp,
     window_geometry::{RawWindowState, WindowGeometry, take_rescue},
 };
 
