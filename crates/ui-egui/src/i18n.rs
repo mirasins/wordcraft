@@ -75,15 +75,10 @@ pub struct LangInfo {
 
 /// The languages WordCraft offers, when their catalogs are embedded. English first: it is the
 /// fallback and the source language.
-pub static LANGUAGES: [LangInfo; 27] = [
+pub static LANGUAGES: [LangInfo; 10] = [
     LangInfo { code: "en", prefer_hans: false, editing_lang: None },
     // Simplified Chinese; `zh`, `zh-CN`, `zh-SG` and `zh-Hans-*` resolve here (the crate's matching).
     LangInfo { code: "zh-hans", prefer_hans: true, editing_lang: None },
-    // Traditional Chinese (Taiwan vocabulary); `zh-TW`, `zh-HK`, `zh-MO` and `zh-Hant-*` resolve here.
-    LangInfo { code: "zh-hant", prefer_hans: true, editing_lang: None },
-    LangInfo { code: "ja", prefer_hans: false, editing_lang: None },
-    LangInfo { code: "ko", prefer_hans: false, editing_lang: None },
-    LangInfo { code: "uk", prefer_hans: false, editing_lang: None },
     // Spanish, neutral across Spain and Latin America; `es-ES`, `es-MX`, `es-419` … resolve here.
     // No fixed editing language: new documents are written in the region's Spanish
     // (`Session::region_spanish`), like English.
@@ -91,46 +86,18 @@ pub static LANGUAGES: [LangInfo; 27] = [
     // Brazilian Portuguese; `pt-BR` and `pt-BR-*` resolve here. Plain `pt` and `pt-PT` have no
     // catalog yet (the European vocabulary differs), so they stay in English ([`lang_from_tag`]).
     LangInfo { code: "pt-br", prefer_hans: false, editing_lang: Some("pt-BR") },
-    // Serbian, Cyrillic script (the default per BCP 47 when no script is given); `sr`, `sr-RS`,
-    // `sr-Cyrl-*` resolve here.
-    LangInfo { code: "sr", prefer_hans: false, editing_lang: None },
-    // Serbian, Latin script; `sr-Latn-*` resolves here; a script is never
-    // crossed, so Latin Serbian never shows Cyrillic.
-    LangInfo { code: "sr-latn", prefer_hans: false, editing_lang: None },
-    // Polish; `pl`, `pl-PL` and `pl_PL.UTF-8` resolve here. WordCraft proofs Polish (spelling,
-    // grammar, hyphenation), so new documents are written in Polish with this interface.
-    LangInfo { code: "pl", prefer_hans: false, editing_lang: Some("pl-PL") },
-    LangInfo { code: "cs", prefer_hans: false, editing_lang: Some("cs-CZ") },
-    LangInfo { code: "et", prefer_hans: false, editing_lang: None },
     // German, neutral across Germany, Austria and Switzerland; `de`, `de-DE`, `de-AT`, `de-CH` …
     // resolve here.
     LangInfo { code: "de", prefer_hans: false, editing_lang: None },
+    // French; `fr`, `fr-FR`, `fr_CA` and other regions resolve here.
+    LangInfo { code: "fr", prefer_hans: false, editing_lang: None },
     // Russian; `ru`, `ru-RU`, `ru_RU.UTF-8` and other regions resolve here.
     LangInfo { code: "ru", prefer_hans: false, editing_lang: None },
-    LangInfo { code: "tr", prefer_hans: false, editing_lang: Some("tr-TR") },
+    LangInfo { code: "ja", prefer_hans: false, editing_lang: None },
+    LangInfo { code: "ko", prefer_hans: false, editing_lang: None },
     // Italian; `it-IT`, `it-CH` and `it-*` resolve here. New documents are written in
     // Italian: `wordcraft-proof` checks it (`ProofLang::It`).
     LangInfo { code: "it", prefer_hans: false, editing_lang: Some("it-IT") },
-    // Hungarian; `hu`, `hu-HU` and `hu_HU.UTF-8` resolve here.
-    LangInfo { code: "hu", prefer_hans: false, editing_lang: None },
-    // French; `fr`, `fr-FR`, `fr_CA` and other regions resolve here.
-    LangInfo { code: "fr", prefer_hans: false, editing_lang: None },
-    // Bulgarian; `bg`, `bg-BG` and `bg_BG.UTF-8` resolve here.
-    LangInfo { code: "bg", prefer_hans: false, editing_lang: None },
-    // Vietnamese; `vi`, `vi-VN` and `vi_VN.UTF-8` resolve here.
-    LangInfo { code: "vi", prefer_hans: false, editing_lang: None },
-    // Swedish; sv, sv-SE, sv-FI and sv_SE.UTF-8 resolve here.
-    LangInfo { code: "sv", prefer_hans: false, editing_lang: None },
-    // Croatian; `hr`, `hr-HR` and `hr_HR.UTF-8` resolve here.
-    LangInfo { code: "hr", prefer_hans: false, editing_lang: None },
-    // Dutch; `nl`, `nl-NL`, `nl-BE` and `nl_NL.UTF-8` resolve here.
-    LangInfo { code: "nl", prefer_hans: false, editing_lang: None },
-    // Danish; `da`, `da-DK` and `da_DK.UTF-8` resolve here.
-    LangInfo { code: "da", prefer_hans: false, editing_lang: None },
-    // Romanian; `ro`, `ro-RO`, `ro_RO.UTF-8` and `ro-MD` resolve here.
-    LangInfo { code: "ro", prefer_hans: false, editing_lang: None },
-    // Slovenian; `sl`, `sl-SI` and `sl_SI.UTF-8` resolve here.
-    LangInfo { code: "sl", prefer_hans: false, editing_lang: None },
 ];
 
 /// A language the UI can be shown in: English, or an offered language whose catalogs are embedded.
