@@ -13,6 +13,12 @@ macro_rules! tl {
     };
 }
 
+/// WordCraft as the Mirai fork's releases know it: updates are only ever downloaded from the
+/// fork's own repository, never from upstream.
+#[cfg(not(target_arch = "wasm32"))]
+pub const UPDATE_APP: craft_update::App =
+    craft_update::App::new("wordcraft", "WordCraft", "Writing and document design", "mirasins/wordcraft");
+
 pub mod a11y;
 pub mod a11y_pane;
 pub mod assistant;
