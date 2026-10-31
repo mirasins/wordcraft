@@ -1060,7 +1060,8 @@ mod tests {
 
     use super::*;
 
-    /// Held by tests that swap or rely on the shared Spanish dictionary, so a folder reset can't land mid-test.
+    /// Held by tests that swap or rely on the shared Spanish dictionary, or change the shared user
+    /// dictionary and ignore list, so neither a folder reset nor another test's words land mid-test.
     static DICTIONARY_TESTS: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
     /// #1063: the dictionaries folder is searched before the system locations; the dictionaries
@@ -1301,6 +1302,7 @@ mod tests {
     /// first, as Word does (#1281, #1045).
     #[test]
     fn english_dialects_flag_each_others_spellings() {
+        let _guard = DICTIONARY_TESTS.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let (us, gb, ca) = (ProofLang::En, ProofLang::EnGb, ProofLang::EnCa);
         // (word, right in en-US, right in en-CA, right in en-GB)
         let cases = [
@@ -1472,6 +1474,7 @@ mod tests {
 
     #[test]
     fn user_dictionary_accepts_the_other_dialects_spelling() {
+        let _guard = DICTIONARY_TESTS.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         add_word("savour");
         assert!(is_correct_in("savour", ProofLang::En), "a word the user added is never flagged");
         assert!(!is_correct_in("savor", ProofLang::EnGb));
@@ -1584,6 +1587,7 @@ mod tests {
 
     #[test]
     fn user_dictionary_works() {
+        let _guard = DICTIONARY_TESTS.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         assert!(!is_correct("zxqwordcrafty"));
         add_word("zxqwordcrafty");
         assert!(is_correct("zxqwordcrafty"));
@@ -1592,6 +1596,7 @@ mod tests {
     /// #40: the user dictionary survives a save and a fresh load.
     #[test]
     fn user_dictionary_persists_through_a_file() {
+        let _guard = DICTIONARY_TESTS.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let dir = std::env::temp_dir().join(format!("wc-dict-{}-{}", std::process::id(), "persist"));
         let _ = std::fs::remove_dir_all(&dir);
         // The folder is created on the first save.
@@ -1614,6 +1619,7 @@ mod tests {
     /// #40: a hostile file is capped: invalid lines are skipped, and only the first megabyte is read.
     #[test]
     fn hostile_dictionary_files_are_capped() {
+        let _guard = DICTIONARY_TESTS.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let dir = std::env::temp_dir().join(format!("wc-dict-{}-{}", std::process::id(), "hostile"));
         let _ = std::fs::create_dir_all(&dir);
         let path = dir.join("custom-dictionary.txt");
@@ -1636,6 +1642,7 @@ mod tests {
     /// #40: saving merges in words another process saved, and leaves out the ones just removed.
     #[test]
     fn saving_merges_with_the_file() {
+        let _guard = DICTIONARY_TESTS.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let dir = std::env::temp_dir().join(format!("wc-dict-{}-{}", std::process::id(), "merge"));
         let _ = std::fs::create_dir_all(&dir);
         let path = dir.join("custom-dictionary.txt");
@@ -1653,6 +1660,7 @@ mod tests {
     /// Ignore All lasts for the session: the word is accepted but isn't in the dictionary.
     #[test]
     fn ignored_words_are_not_dictionary_words() {
+        let _guard = DICTIONARY_TESTS.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         assert!(!is_correct("zxqignoredword"));
         ignore_word("ZxqIgnoredWord");
         assert!(is_correct("zxqignoredword"));
@@ -1671,6 +1679,7 @@ mod tests {
     /// #40: a missing file loads as empty, never an error.
     #[test]
     fn missing_dictionary_file_loads_empty() {
+        let _guard = DICTIONARY_TESTS.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
         let path = std::env::temp_dir().join(format!("wc-dict-{}-missing.txt", std::process::id()));
         let _ = std::fs::remove_file(&path);
         assert!(load_user_dictionary(&path).is_empty());
